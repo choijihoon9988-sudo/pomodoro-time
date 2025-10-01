@@ -29,12 +29,14 @@ import {
 // Firebase 콘솔 -> 프로젝트 설정 -> 일반 탭에서 찾을 수 있습니다.
 // ===================================================================================
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+
+  apiKey: "AIzaSyCRHNKmNBtTFbCeQhhGJsoxYwmqKu1f4uo",
+  authDomain: "pomodoro-os.firebaseapp.com",
+  projectId: "pomodoro-os",
+  storageBucket: "pomodoro-os.firebasestorage.app",
+  messagingSenderId: "338185932667",
+  appId: "1:338185932667:web:c5c9c46274db636d6777de"
+
 };
 
 
