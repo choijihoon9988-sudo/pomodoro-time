@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Friction-Zero OS</title>
     <link rel="stylesheet" href="style.css">
-    <script type="module" src="script.js" defer></script>
+    <!-- Firebase SDK는 script.js에서 모듈 형태로 가져옵니다. -->
 </head>
 <body>
     <div id="app-container">
+        <!-- 로그인/회원가입 뷰 -->
         <section id="auth-view">
             <div class="auth-form__container">
                 <form id="login-form" class="auth-form">
@@ -43,15 +44,24 @@
             </div>
         </section>
 
+        <!-- 메인 앱 뷰 -->
         <main id="app-view" class="hidden">
             <header class="app-header">
-                <h1>Friction-Zero OS</h1>
+                <div class="app-header__title">
+                    <h1>Friction-Zero OS</h1>
+                    <div class="gamification-stats">
+                        <span>🔥 연속 <span id="streak-count">0</span>일</span>
+                        <span class="separator">|</span>
+                        <span>LV. <span id="user-level">1</span></span>
+                    </div>
+                </div>
                 <div class="app-header__user-info">
                     <span id="user-email"></span>
                     <button id="logout-btn" class="button button--secondary">로그아웃</button>
                 </div>
             </header>
 
+            <!-- 컨디션 선택 화면 -->
             <section id="condition-selector">
                 <h2>오늘의 컨디션은 어떠신가요?</h2>
                 <div class="condition-selector__buttons">
@@ -62,6 +72,7 @@
                 </div>
             </section>
 
+            <!-- 타이머 화면 -->
             <section id="timer-view" class="hidden">
                 <div class="timer">
                     <p class="timer__mode">집중</p>
@@ -76,18 +87,23 @@
                 <div class="settings">
                     <h3>뇌과학 프리셋</h3>
                     <div class="settings__presets">
-                        <button class="button button--preset" data-focus="25" data-rest="5">25분 집중 / 5분 휴식</button>
-                        <button class="button button--preset" data-focus="50" data-rest="10">50분 집중 / 10분 휴식</button>
+                        <button class="button button--preset" data-focus="25" data-rest="5">25:05</button>
+                        <button class="button button--preset" data-focus="50" data-rest="10">50:10</button>
                     </div>
                 </div>
                 
-                <button id="end-day-btn" class="button button--primary">하루 마감</button>
+                <div class="main-actions">
+                    <button id="my-systems-btn" class="button button--secondary">나의 시스템</button>
+                    <button id="end-day-btn" class="button button--primary">하루 마감</button>
+                </div>
             </section>
         </main>
     </div>
 
+    <!-- 모달 레이어 -->
     <div id="modal-layer">
-        <div id="log-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="log-modal-title" aria-hidden="true">
+        <!-- 세션 기록 모달 -->
+        <div id="log-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="log-modal-title">
             <div class="modal__overlay" data-close-modal></div>
             <div class="modal__content">
                 <button class="modal__close-btn" aria-label="Close dialog" data-close-modal>&times;</button>
@@ -98,39 +114,58 @@
                         <textarea id="log-activity" rows="3" required></textarea>
                     </div>
                     <div class="form-field">
-                        <label>집중을 방해한 '마찰'이 있었나요? (다중 선택 가능)</label>
-                        <div id="friction-tags" class="tag-group">
-                            </div>
+                        <label>집중을 방해한 '마찰'이 있었나요?</label>
+                        <div id="friction-tags" class="tag-group"></div>
                     </div>
                      <div class="form-field">
                         <label>마찰 발생 시 느꼈던 감정은 무엇인가요?</label>
-                        <div id="emotion-tags" class="tag-group">
-                            </div>
+                        <div id="emotion-tags" class="tag-group"></div>
+                    </div>
+                    <div class="form-field">
+                        <label for="distraction-input">딴생각 저장소 (떠오른 생각 입력 후 Enter)</label>
+                        <input type="text" id="distraction-input" placeholder="예: 저녁 장보기">
+                        <ul id="distraction-list"></ul>
                     </div>
                     <button type="submit" class="button button--primary">저장하고 계속하기</button>
                 </form>
             </div>
         </div>
 
-        <div id="report-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="report-modal-title" aria-hidden="true">
+        <!-- 데일리 리포트 모달 -->
+        <div id="report-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="report-modal-title">
             <div class="modal__overlay" data-close-modal></div>
             <div class="modal__content">
                 <button class="modal__close-btn" aria-label="Close dialog" data-close-modal>&times;</button>
                 <h2 id="report-modal-title">데일리 리포트</h2>
-                <div id="report-content">
-                    </div>
+                <div id="report-content"></div>
                 <button id="show-system-btn" class="button button--primary hidden">시스템 제작</button>
             </div>
         </div>
 
-        <div id="system-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="system-modal-title" aria-hidden="true">
+        <!-- 시스템 제안 모달 -->
+        <div id="system-suggestion-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="system-modal-title">
             <div class="modal__overlay" data-close-modal></div>
             <div class="modal__content">
                 <button class="modal__close-btn" aria-label="Close dialog" data-close-modal>&times;</button>
                 <h2 id="system-modal-title">안티-마찰 시스템 제안</h2>
                 <p id="system-suggestion-text"></p>
+                <button id="adopt-system-btn" class="button button--primary">이 시스템 채택하기</button>
             </div>
         </div>
+        
+        <!-- 나의 시스템 라이브러리 모달 -->
+        <div id="my-systems-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="my-systems-title">
+            <div class="modal__overlay" data-close-modal></div>
+            <div class="modal__content">
+                <button class="modal__close-btn" aria-label="Close dialog" data-close-modal>&times;</button>
+                <h2 id="my-systems-title">나의 시스템 라이브러리</h2>
+                <div id="my-systems-list">
+                    <p>아직 채택한 시스템이 없습니다. 데일리 리포트를 통해 시스템을 제안받아 보세요.</p>
+                </div>
+            </div>
+        </div>
+
     </div>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
