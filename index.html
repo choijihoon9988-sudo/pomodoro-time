@@ -73,14 +73,20 @@
                 </div>
             </section>
 
-            <!-- 타이머 화면 래퍼 (오류 해결을 위해 추가) -->
+            <!-- 타이머 화면 래퍼 -->
             <div id="timer-view-wrapper" class="hidden">
-                <!-- 기존 timer-view를 래퍼 안으로 이동 -->
                 <section id="timer-view">
+                    <div id="daily-goal">
+                        <label id="daily-goal-label" for="daily-goal-input">오늘의 목표 집중 에너지:</label>
+                        <input type="number" id="daily-goal-input" min="1" value="8">
+                        <button id="set-goal-btn" class="button button--secondary">설정</button>
+                        <div id="goal-progress-bar-container">
+                            <div id="goal-progress-bar"></div>
+                        </div>
+                    </div>
                     <div class="timer">
                          <div class="timer__header">
                             <p class="timer__mode">집중</p>
-                             <!-- pomodoro-display 요소 추가 -->
                              <p id="pomodoro-display"></p>
                         </div>
                         <p class="timer__display">25:00</p>
@@ -97,7 +103,6 @@
                             <button class="button button--preset" data-focus="25" data-rest="5">25:05</button>
                             <button class="button button--preset" data-focus="50" data-rest="10">50:10</button>
                         </div>
-                        <!-- 알람 소리 선택 UI 추가 -->
                         <div class="settings__sound">
                             <label for="alarm-sound-select">알람 소리: </label>
                             <select id="alarm-sound-select"></select>
@@ -105,14 +110,12 @@
                     </div>
                     
                     <div class="main-actions">
-                         <!-- 주간 리포트 버튼 추가 -->
                         <button id="weekly-report-btn" class="button button--secondary">주간 회고</button>
                         <button id="my-systems-btn" class="button button--secondary">나의 시스템</button>
                         <button id="end-day-btn" class="button button--primary">하루 마감</button>
                     </div>
                 </section>
                 
-                 <!-- 오늘의 집중 나무 섹션 추가 -->
                  <section id="focus-forest">
                     <h3>오늘의 집중 나무</h3>
                     <div id="forest-display"></div>
@@ -180,13 +183,11 @@
             <div class="modal__content">
                 <button class="modal__close-btn" aria-label="Close dialog" data-close-modal>&times;</button>
                 <h2 id="my-systems-title">나의 시스템 라이브러리</h2>
-                <div id="my-systems-list">
-                    <p>아직 채택한 시스템이 없습니다. 데일리 리포트를 통해 시스템을 제안받아 보세요.</p>
-                </div>
+                <div id="my-systems-list"></div>
             </div>
         </div>
 
-        <!-- 세션 전환 모달 추가 -->
+        <!-- 세션 전환 모달 -->
         <div id="session-transition-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="transition-title">
             <div class="modal__overlay"></div>
             <div class="modal__content">
@@ -198,7 +199,7 @@
         </div>
     </div>
     
-    <!-- 긍정 확언 오버레이 추가 -->
+    <!-- 긍정 확언 오버레이 -->
     <div id="positive-priming">
         <p id="positive-priming-text"></p>
     </div>
