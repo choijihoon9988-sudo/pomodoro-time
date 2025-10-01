@@ -54,7 +54,7 @@ const FirebaseAPI = (() => {
     const init = () => {
         if (firebaseConfig.apiKey === "YOUR_API_KEY") {
             console.error("Firebase 구성 정보가 비어있습니다. script.js 파일의 firebaseConfig 객체를 채워주세요.");
-            alert("Firebase 설정이 필요합니다. F12를 눌러 콘솔을 확인해주세요.");
+            alert("서비스 연결이 원활하지 않습니다. 잠시 후 다시 시도해주세요.");
             return false;
         }
         app = initializeApp(firebaseConfig);
@@ -163,7 +163,6 @@ const UI = (() => {
         ];
         ids.forEach(id => dom[id.replace(/-(\w)/g, (_, c) => c.toUpperCase())] = document.getElementById(id));
         
-        // 클래스 기반 DOM 캐싱
         dom.loginError = dom.loginForm?.querySelector('.auth-form__error');
         dom.signupError = dom.signupForm?.querySelector('.auth-form__error');
         dom.showSignupBtn = document.getElementById('show-signup');
@@ -244,7 +243,6 @@ const UI = (() => {
         if (dom.timerMode) dom.timerMode.textContent = mode;
         document.title = `${timeString} - ${mode}`;
 
-        // 원형 프로그레스 바 업데이트
         const percentage = total > 0 ? remaining / total : 0;
         if(dom.timerProgressTime) {
             dom.timerProgressTime.style.strokeDashoffset = CIRCLE_CIRCUMFERENCE * (1 - percentage);
@@ -254,7 +252,7 @@ const UI = (() => {
 
     const updateTimerControls = (state) => {
         if (!dom.startBtn || !dom.pauseBtn) return;
-        dom.startBtn.textContent = state === 'paused' ? '계속' : '시작';
+        dom.startBtn.textContent = state === 'paused' ? '다시 집중' : '집중 시작';
         dom.startBtn.classList.toggle('hidden', state === 'running');
         dom.pauseBtn.classList.toggle('hidden', state !== 'running');
     };
@@ -276,7 +274,7 @@ const UI = (() => {
     const updateForestDisplay = (sessions) => {
         if (!dom.forestDisplay) return;
         const energyMap = { 'short': '🍅', 'medium': '🌳', 'long': '🌲' };
-        dom.forestDisplay.innerHTML = sessions.map(s => `<span>${energyMap[s.type]}</span>`).join('') || '<span style="font-size: 1rem; color: var(--text-light-color);">집중을 시작하여 나무를 심으세요.</span>';
+        dom.forestDisplay.innerHTML = sessions.map(s => `<span>${energyMap[s.type]}</span>`).join('') || '<span style="font-size: 1rem; color: var(--text-light-color);">집중하여 당신의 성장 나무를 키워보세요.</span>';
     };
 
     const updateGoalProgress = (current, total) => {
@@ -318,14 +316,14 @@ const UI = (() => {
         if (dom.distractionList) dom.distractionList.innerHTML = distractions.map(d => `<li>${d}</li>`).join('');
     };
 
-    const renderReport = (reportData, title = "데일리 리포트") => {
+    const renderReport = (reportData, title = "오늘의 성장 리포트") => {
         if (!dom.reportContent) return;
         const { totalFocusMinutes, energy, topFrictions, insight, badges } = reportData;
-        const topFrictionsHTML = topFrictions.length > 0 ? topFrictions.map(f => `<li>${f.tag} (${f.count}회)</li>`).join('') : '<li>기록된 마찰이 없습니다.</li>';
-        const badgesHTML = badges?.length > 0 ? `<div class="report__stat"><p class="report__title">새로 획득한 뱃지</p><ul class="report__list">${badges.map(b => `<li>🏅 ${b.name}</li>`).join('')}</ul></div>` : '';
+        const topFrictionsHTML = topFrictions.length > 0 ? topFrictions.map(f => `<li>${f.tag} (${f.count}회)</li>`).join('') : '<li>오늘은 마찰 없이 순항하셨네요! 멋져요.</li>';
+        const badgesHTML = badges?.length > 0 ? `<div class="report__stat"><p class="report__title">새로운 성장 배지</p><ul class="report__list">${badges.map(b => `<li>🏅 ${b.name}</li>`).join('')}</ul></div>` : '';
         const reportModalContent = dom.reportModal.querySelector('.modal__content');
         if (reportModalContent) reportModalContent.querySelector('h2').textContent = title;
-        dom.reportContent.innerHTML = `<div class="report__grid"><div class="report__stat"><p class="report__title">총 집중 시간</p><p class="report__value">${totalFocusMinutes}분</p></div><div class="report__stat"><p class="report__title">획득한 집중 에너지</p><p class="report__value">${energy.toFixed(1)}</p></div></div>${badgesHTML}<div class="report__stat"><p class="report__title">주요 마찰 Top 3</p><ul class="report__list">${topFrictionsHTML}</ul></div>${insight ? `<div class="report__insight"><p>${insight}</p></div>` : ''}`;
+        dom.reportContent.innerHTML = `<div class="report__grid"><div class="report__stat"><p class="report__title">총 몰입 시간</p><p class="report__value">${totalFocusMinutes}분</p></div><div class="report__stat"><p class="report__title">오늘 얻은 성장 에너지</p><p class="report__value">${energy.toFixed(1)}</p></div></div>${badgesHTML}<div class="report__stat"><p class="report__title">성장을 방해한 주요 마찰</p><ul class="report__list">${topFrictionsHTML}</ul></div>${insight ? `<div class="report__insight"><p>${insight}</p></div>` : ''}`;
         if (dom.showSystemBtn) dom.showSystemBtn.classList.toggle('hidden', !reportData.topFrictionTag);
         toggleModal('report-modal', true);
     };
@@ -339,7 +337,7 @@ const UI = (() => {
 
     const renderMySystems = (systems) => {
         if (!dom.mySystemsList) return;
-        dom.mySystemsList.innerHTML = systems.length === 0 ? `<p>아직 채택한 시스템이 없습니다.</p>` : systems.map(system => `<div class="system-card" data-id="${system.id}"><div class="system-card__header"><h3 class="system-card__title">${system.title}</h3><span class="system-card__tag">${system.targetFriction}</span></div><p class="system-card__description">${system.description}</p><div class="system-card__footer"><span>채택일: ${system.adoptedAt.toLocaleDateString()}</span><button class="button button--danger" data-action="delete-system">삭제</button></div></div>`).join('');
+        dom.mySystemsList.innerHTML = systems.length === 0 ? `<p>아직 추가된 성장 시스템이 없어요. 리포트를 통해 나만의 시스템을 만들어보세요.</p>` : systems.map(system => `<div class="system-card" data-id="${system.id}"><div class="system-card__header"><h3 class="system-card__title">${system.title}</h3><span class="system-card__tag">${system.targetFriction}</span></div><p class="system-card__description">${system.description}</p><div class="system-card__footer"><span>추가한 날짜: ${system.adoptedAt.toLocaleDateString()}</span><button class="button button--danger" data-action="delete-system">삭제</button></div></div>`).join('');
     };
 
     const updateActivePreset = (condition) => {
@@ -395,7 +393,7 @@ const Auth = (() => {
     };
     const handleSignUp = async (email, password) => { try { await FirebaseAPI.signUp(email, password); } catch (error) { UI.displayAuthError('signup', App.mapAuthCodeToMessage(error.code)); } };
     const handleSignIn = async (email, password) => { try { await FirebaseAPI.signIn(email, password); } catch (error) { UI.displayAuthError('login', App.mapAuthCodeToMessage(error.code)); } };
-    const handleSignOut = async () => { try { await FirebaseAPI.logOut(); } catch (error) { console.error("로그아웃 실패:", error); } };
+    const handleSignOut = async () => { try { await FirebaseAPI.logOut(); } catch (error) { console.error("로그아웃 중 오류가 발생했습니다:", error); } };
     return { init, handleSignUp, handleSignIn, handleSignOut, getCurrentUser: () => currentUser };
 })();
 
@@ -408,7 +406,7 @@ const Timer = (() => {
     let state = { timerId: null, totalSeconds: 1500, remainingSeconds: 1500, mode: '집중', status: 'idle', logTriggered: false };
     let config = { focusDuration: 25, restDuration: 5, condition: '보통' };
     let alarm = new Audio('sounds/alarm_clock.ogg');
-    const positiveMessages = ["최고의 집중력을 발휘할 준비가 되었습니다.", "하나의 작은 행동이 거대한 성공을 만듭니다.", "가장 중요한 일에 에너지를 쏟아부으세요.", "지금 이 순간의 몰입이 내일의 당신을 만듭니다."];
+    const positiveMessages = ["최고의 몰입을 경험할 시간입니다.", "작은 집중이 큰 성장을 만듭니다.", "가장 중요한 일에 에너지를 쏟으세요.", "지금 이 순간의 몰입이 내일의 당신을 만듭니다."];
 
     const tick = () => {
         state.remainingSeconds--;
@@ -430,13 +428,13 @@ const Timer = (() => {
             Gamification.updateFocusSession(config.focusDuration);
             state.mode = '휴식';
             state.totalSeconds = config.restDuration * 60;
-            transitionData = { icon: '☕', title: '집중 시간 종료!', message: `${config.restDuration}분간 휴식을 시작합니다.`, buttonText: '휴식 시작', buttonClass: 'button--secondary' };
-            Notifications.show('집중 시간 종료!', { body: `이제 ${config.restDuration}분간 휴식하세요.` });
+            transitionData = { icon: '☕', title: '수고하셨어요! 잠시 숨을 고르세요', message: `${config.restDuration}분간 재충전 시간입니다.`, buttonText: '휴식 시작', buttonClass: 'button--secondary' };
+            Notifications.show('수고하셨어요!', { body: `이제 ${config.restDuration}분간 휴식하며 재충전하세요.` });
         } else {
             state.mode = '집중';
             state.totalSeconds = config.focusDuration * 60;
-            transitionData = { icon: '🔥', title: '휴식 종료!', message: `${config.focusDuration}분간 집중을 시작합니다.`, buttonText: '집중 시작', buttonClass: 'button--success' };
-            Notifications.show('휴식 종료!', { body: `이제 ${config.focusDuration}분간 집중하세요.` });
+            transitionData = { icon: '🔥', title: '다시, 집중할 시간이에요!', message: `${config.focusDuration}분간 몰입을 시작합니다.`, buttonText: '집중 시작', buttonClass: 'button--success' };
+            Notifications.show('다시 집중할 시간', { body: `이제 ${config.focusDuration}분간 다시 몰입해보세요.` });
         }
         UI.showSessionTransitionModal(transitionData);
         UI.updateTimerControls(state.status);
@@ -519,15 +517,14 @@ const Logger = (() => {
         const user = Auth.getCurrentUser();
         if (!user) return;
         const { activity, frictionTags, emotionTags } = UI.getLogFormData();
-        if (!activity) return alert("수행 내용을 입력해주세요.");
+        if (!activity) return alert("무엇에 집중하셨는지 알려주세요.");
         try {
             await FirebaseAPI.saveLog(user.uid, { activity, frictionTags, emotionTags, distractions, sessionDuration: Timer.getCurrentSessionDuration(), timestamp: serverTimestamp() });
             distractions = [];
             UI.resetLogForm();
             UI.toggleModal('log-modal', false);
-            // 로그 저장 후 바로 휴식 시작
-            Timer.startNextSession();
-        } catch (error) { console.error("로그 저장 실패:", error); alert("로그 저장 중 오류가 발생했습니다."); }
+            Timer.start();
+        } catch (error) { console.error("기록 저장 중 오류:", error); alert("기록 저장 중 오류가 발생했어요. 잠시 후 다시 시도해주세요."); }
     };
     return { triggerLogPopup, handleLogSubmit, handleDistractionInput };
 })();
@@ -552,14 +549,14 @@ const Report = (() => {
         try {
             const today = new Date();
             const logs = await FirebaseAPI.getLogsByDateRange(user.uid, new Date(today.setHours(0, 0, 0, 0)), new Date(today.setHours(23, 59, 59, 999)));
-            if (logs.length === 0) return alert("오늘 기록된 세션이 없습니다.");
+            if (logs.length === 0) return alert("오늘의 집중 기록이 없어요. 성장을 위해 타이머를 시작해보세요.");
             const analysis = analyzeLogs(logs);
             const insight = generateInsight(analysis.frictionCounts);
             const earnedBadges = await Gamification.checkBadges(logs);
             currentReportData = { ...analysis, insight, badges: earnedBadges };
-            UI.renderReport(currentReportData, "데일리 리포트");
+            UI.renderReport(currentReportData, "오늘의 성장 리포트");
             await Gamification.updateStreak();
-        } catch (error) { console.error("리포트 생성 실패:", error); }
+        } catch (error) { console.error("리포트 생성 중 오류:", error); }
     };
     const generateWeeklyReport = async () => {
         const user = Auth.getCurrentUser();
@@ -569,26 +566,26 @@ const Report = (() => {
             const startOfWeek = new Date(new Date().setDate(endOfWeek.getDate() - 6));
             startOfWeek.setHours(0, 0, 0, 0);
             const logs = await FirebaseAPI.getLogsByDateRange(user.uid, startOfWeek, endOfWeek);
-            if (logs.length === 0) return alert("지난 7일간 기록된 세션이 없습니다.");
+            if (logs.length === 0) return alert("지난 7일간의 집중 기록이 없어요.");
             const analysis = analyzeLogs(logs);
-            const insight = `지난 7일간 가장 큰 마찰은 [${analysis.topFrictionTag || '없음'}] 이었습니다.`;
+            const insight = `지난 7일간 성장을 가장 방해한 마찰은 [${analysis.topFrictionTag || '없음'}]이었어요.`;
             currentReportData = { ...analysis, insight, badges: [] };
-            UI.renderReport(currentReportData, "주간 회고 리포트");
-        } catch (error) { console.error("주간 리포트 생성 실패:", error); }
+            UI.renderReport(currentReportData, "주간 성장 리포트");
+        } catch (error) { console.error("주간 리포트 생성 중 오류:", error); }
     };
     const generateInsight = (counts) => {
-        if (counts['업무 외 검색'] >= 2) return "패턴 분석: [업무 외 검색]으로 집중력이 자주 분산되는 경향이 있습니다.";
-        if (counts['메신저 확인'] >= 3) return "패턴 분석: [메신저 확인] 마찰이 잦습니다. 집중 시간에는 알림을 꺼두는 것을 고려해보세요.";
-        if (counts['불필요한 생각'] >= 2) return "패턴 분석: [불필요한 생각]이 집중을 방해하고 있습니다. 세션 시작 전 '브레인 덤프'가 도움이 될 수 있습니다.";
+        if (counts['업무 외 검색'] >= 2) return "성장 인사이트: [업무 외 검색]으로 몰입이 자주 끊기는 경향이 있어요.";
+        if (counts['메신저 확인'] >= 3) return "성장 인사이트: [메신저 확인] 마찰이 잦군요. 집중 시간에는 알림을 잠시 꺼두는 건 어떠세요?";
+        if (counts['불필요한 생각'] >= 2) return "성장 인사이트: [불필요한 생각]이 몰입을 방해하고 있어요. 집중 시작 전, 생각을 비워내는 '브레인 덤프'가 도움이 될 거예요.";
         return null;
     };
     const getSystemSuggestion = (tag) => {
         const suggestions = {
-            '업무 외 검색': { title: "사이트 차단 시스템", description: "집중 세션 중 불필요한 사이트 접속을 막는 'BlockSite' 같은 확장 프로그램 사용을 시스템화하는 것을 추천합니다." },
-            '불필요한 생각': { title: "브레인 덤프 시스템", description: "세션 시작 전 2분간 생각을 비워내는 '브레인 덤프'를 시스템화하는 것을 추천합니다." },
-            '메신저 확인': { title: "메시지 타임 블록", description: "집중 시간에는 메신저를 종료하고, 특정 시간에만 확인하는 '타임 블록' 시스템을 도입하는 것을 추천합니다." }
+            '업무 외 검색': { title: "사이트 집중 모드", description: "추천 시스템: 집중 시간에는 허용된 사이트 외의 접속을 막아주는 '사이트 차단 확장 프로그램'을 활용해보세요. 의도치 않은 시간 낭비를 막을 수 있습니다." },
+            '불필요한 생각': { title: "브레인 덤프", description: "추천 시스템: 집중을 시작하기 전 2분 동안, 머릿속에 떠오르는 모든 생각을 글로 적어내보세요. 뇌를 비우고 현재 과제에 완전히 몰입하는 데 도움이 될 거예요." },
+            '메신저 확인': { title: "메시지 확인 타임블록", description: "추천 시스템: 집중 시간에는 메신저를 완전히 종료하고, 휴식 시간에만 확인하는 규칙을 만들어보세요. 소통과 집중의 균형을 찾을 수 있습니다." }
         };
-        return { ...(suggestions[tag] || { title: "맞춤형 시스템 구축", description: `[${tag}] 마찰을 해결하기 위한 자신만의 시스템을 구축해보세요.` }), targetFriction: tag };
+        return { ...(suggestions[tag] || { title: "나만의 시스템 만들기", description: `[${tag}] 마찰을 해결하기 위한 자신만의 시스템을 구축해보세요. 예를 들어, [주변 소음]이 문제라면 '노이즈 캔슬링 헤드폰 사용'을 시스템으로 만들 수 있어요.` }), targetFriction: tag };
     };
     return { generateDailyReport, generateWeeklyReport, getSystemSuggestion, getCurrentReportData: () => currentReportData };
 })();
@@ -606,7 +603,7 @@ const Systems = (() => {
             const systems = await FirebaseAPI.getSystems(user.uid);
             UI.renderMySystems(systems.map(s => ({ ...s, adoptedAt: s.adoptedAt.toDate() })));
             UI.toggleModal('my-systems-modal', true);
-        } catch (error) { console.error("시스템 로딩 실패:", error); }
+        } catch (error) { console.error("시스템 로딩 중 오류:", error); }
     };
     const adoptSystem = async (e) => {
         const user = Auth.getCurrentUser();
@@ -615,17 +612,17 @@ const Systems = (() => {
         try {
             await FirebaseAPI.addSystem(user.uid, { ...suggestion, adoptedAt: serverTimestamp() });
             UI.toggleModal('system-suggestion-modal', false);
-            alert(`[${suggestion.title}] 시스템이 라이브러리에 추가되었습니다.`);
-        } catch (error) { console.error("시스템 추가 실패:", error); }
+            alert(`[${suggestion.title}] 시스템이 나의 성장 시스템에 추가되었어요.`);
+        } catch (error) { console.error("시스템 추가 중 오류:", error); }
     };
     const handleSystemListClick = async (e) => {
         if (e.target.dataset.action !== 'delete-system') return;
         const user = Auth.getCurrentUser();
         const card = e.target.closest('.system-card');
         if (!user || !card) return;
-        if (confirm("정말로 이 시스템을 삭제하시겠습니까?")) {
+        if (confirm("이 시스템을 정말 삭제할까요? 이 결정은 되돌릴 수 없어요.")) {
             try { await FirebaseAPI.deleteSystem(user.uid, card.dataset.id); card.remove(); }
-            catch (error) { console.error("시스템 삭제 실패:", error); }
+            catch (error) { console.error("시스템 삭제 중 오류:", error); }
         }
     };
     return { showMySystems, adoptSystem, handleSystemListClick };
@@ -660,12 +657,12 @@ const Gamification = (() => {
     };
     const setDailyGoal = async () => {
         const goal = UI.getDailyGoal();
-        if (!goal || isNaN(goal) || goal <= 0) return alert("유효한 목표 에너지를 입력해주세요.");
+        if (!goal || isNaN(goal) || goal <= 0) return alert("달성 가능한 목표를 설정해주세요.");
         dailyProgress.goal = goal;
-        profile.dailyGoals.defaultGoal = goal; // 다음 날을 위해 기본 목표 저장
+        profile.dailyGoals.defaultGoal = goal;
         UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
         await saveDailyProgress();
-        alert(`오늘의 목표 집중 에너지가 ${goal}로 설정되었습니다.`);
+        alert(`오늘의 성장 목표가 ${goal} 에너지로 설정되었어요. 응원할게요!`);
     };
     const updateFocusSession = (duration) => {
         const energy = duration >= 50 ? 2.5 : duration >= 30 ? 1.5 : 1.0;
@@ -675,13 +672,13 @@ const Gamification = (() => {
         UI.updateForestDisplay(dailyProgress.sessions);
         UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
         if (dailyProgress.goal > 0 && dailyProgress.energy >= dailyProgress.goal && dailyProgress.energy - energy < dailyProgress.goal) {
-            alert("🎉 오늘의 목표 집중 에너지를 달성했습니다! 대단해요!");
+            alert("🎉 목표 달성! 꾸준함이 당신을 성장시킵니다. 정말 대단해요!");
         }
         profile.totalFocusMinutes += duration;
         const newLevel = Math.floor(profile.totalFocusMinutes / 60) + 1;
         if (newLevel > profile.level) {
             profile.level = newLevel;
-            alert(`축하합니다! 레벨 ${newLevel}(으)로 상승했습니다!`);
+            alert(`✨ 레벨업! 성장 레벨 ${newLevel}을 달성했어요!`);
         }
         saveProfile();
         saveDailyProgress();
@@ -701,8 +698,8 @@ const Gamification = (() => {
         const earned = [];
         const frictionCounts = logs.flatMap(log => log.frictionTags).reduce((acc, tag) => ({ ...acc, [tag]: (acc[tag] || 0) + 1 }), {});
         const badgeConditions = {
-            'friction-slayer': { name: '마찰 극복자', condition: () => Object.keys(frictionCounts).length > 0 && logs.length >= 5 },
-            'deep-diver': { name: '딥다이버', condition: () => logs.some(log => log.sessionDuration >= 50) }
+            'friction-slayer': { name: '마찰 해결사', condition: () => Object.keys(frictionCounts).length > 0 && logs.length >= 5 },
+            'deep-diver': { name: '몰입의 대가', condition: () => logs.some(log => log.sessionDuration >= 50) }
         };
         for (const [id, badge] of Object.entries(badgeConditions)) {
             if (!profile.badges.includes(id) && badge.condition()) {
@@ -748,19 +745,18 @@ const App = (() => {
         Auth.init();
         Notifications.requestPermission();
         Favicon.set('default');
-        // 초기 타이머 설정
         Timer.setConfig(25, 5, '보통');
     };
     const mapAuthCodeToMessage = (code) => {
         const messages = {
-            'auth/invalid-email': '유효하지 않은 이메일 형식입니다.',
-            'auth/user-not-found': '사용자를 찾을 수 없습니다.',
-            'auth/wrong-password': '비밀번호가 일치하지 않습니다.',
-            'auth/email-already-in-use': '이미 사용 중인 이메일입니다.',
-            'auth/weak-password': '비밀번호는 6자리 이상이어야 합니다.',
+            'auth/invalid-email': '올바른 이메일 형식이 아니에요.',
+            'auth/user-not-found': '가입하지 않은 이메일이거나, 이메일을 잘못 입력하셨어요.',
+            'auth/wrong-password': '비밀번호가 일치하지 않아요.',
+            'auth/email-already-in-use': '이미 사용 중인 이메일이에요.',
+            'auth/weak-password': '비밀번호는 6자리 이상이어야 해요.',
             'auth/invalid-credential': '이메일 또는 비밀번호가 잘못되었습니다.'
         };
-        return messages[code] || '인증 중 오류가 발생했습니다: ' + code;
+        return messages[code] || '오류가 발생했습니다: ' + code;
     };
     const handlePresetSelect = (e) => {
         const btn = e.target.closest('.button--preset');

@@ -3,23 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Friction-Zero OS | 집중의 시작</title>
-    <!-- 폰트 추가 -->
+    <title>마찰 제로 OS | Friction-Zero OS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- 스타일시트 링크 -->
     <link rel="stylesheet" href="style.css">
-    <!-- 파비콘 링크 -->
     <link id="favicon" rel="icon" href="icons/favicon-default.png" type="image/png">
 </head>
 <body>
     <div id="app-container">
-        <!-- 로그인/회원가입 뷰 -->
         <section id="auth-view" class="view">
             <div class="auth-form__container">
                 <form id="login-form" class="auth-form">
-                    <h2>로그인</h2>
+                    <h2>다시, 성장의 궤도에 오를 시간</h2>
                     <div class="auth-form__field">
                         <label for="login-email">이메일</label>
                         <input type="email" id="login-email" required>
@@ -30,11 +26,11 @@
                     </div>
                     <p class="auth-form__error hidden"></p>
                     <button type="submit" class="button button--primary button--full">로그인</button>
-                    <p class="auth-form__switch">계정이 없으신가요? <button type="button" id="show-signup">회원가입</button></p>
+                    <p class="auth-form__switch">계정이 없으신가요? <button type="button" id="show-signup">지금 시작하기</button></p>
                 </form>
 
                 <form id="signup-form" class="auth-form hidden">
-                    <h2>회원가입</h2>
+                    <h2>성장을 위한 첫걸음</h2>
                     <div class="auth-form__field">
                         <label for="signup-email">이메일</label>
                         <input type="email" id="signup-email" required>
@@ -50,13 +46,12 @@
             </div>
         </section>
 
-        <!-- 메인 앱 뷰 -->
         <main id="app-view" class="view hidden">
             <header class="app-header">
                 <div class="app-header__title">
-                    <h1>Friction-Zero OS</h1>
+                    <h1>마찰 제로 OS</h1>
                     <div class="gamification-stats">
-                        <span>🔥 연속 <span id="streak-count">0</span>일</span>
+                        <span>🔥 <span id="streak-count">0</span>일 연속 집중</span>
                         <span class="separator">|</span>
                         <span>LV. <span id="user-level">1</span></span>
                     </div>
@@ -67,7 +62,6 @@
                 </div>
             </header>
 
-            <!-- 포커스 대시보드 -->
             <section class="focus-dashboard">
                 <div class="timer-container">
                     <div class="timer-progress">
@@ -91,23 +85,22 @@
                 <div class="dashboard-widgets">
                     <div class="widget">
                         <div class="widget__header">
-                            <h3 class="widget__title">오늘의 목표</h3>
+                            <h3 class="widget__title">오늘의 성장 목표</h3>
                             <div class="daily-goal">
                                 <input type="number" id="daily-goal-input" min="1" value="8">
                                 <span>에너지</span>
                                 <button id="set-goal-btn" class="button button--small">설정</button>
                             </div>
                         </div>
-                        <p class="widget__value">현재 <span id="current-energy">0</span> / <span id="total-goal">8</span> 에너지</p>
+                        <p class="widget__value"><span id="current-energy">0</span> / <span id="total-goal">8</span></p>
                     </div>
                     <div class="widget">
-                        <h3 class="widget__title">오늘의 집중 나무</h3>
+                        <h3 class="widget__title">나의 성장 나무</h3>
                         <div id="forest-display" class="widget__content"></div>
                     </div>
                 </div>
             </section>
 
-            <!-- 설정 및 액션 패널 -->
             <footer class="app-footer">
                 <details class="settings-panel">
                     <summary class="settings-panel__toggle">
@@ -115,109 +108,101 @@
                         <span>설정</span>
                     </summary>
                     <div class="settings-panel__content">
-                        <h4>뇌과학 프리셋</h4>
+                        <h4>집중 관리 프리셋</h4>
                         <div class="settings__presets">
-                            <button class="button button--preset" data-condition="최상" data-focus="50" data-rest="10">최상(50:10)</button>
-                            <button class="button button--preset" data-condition="좋음" data-focus="30" data-rest="5">좋음(30:05)</button>
-                            <button class="button button--preset active" data-condition="보통" data-focus="25" data-rest="5">보통(25:05)</button>
-                            <button class="button button--preset" data-condition="나쁨" data-focus="25" data-rest="10">나쁨(25:10)</button>
+                            <button class="button button--preset" data-condition="최상" data-focus="50" data-rest="10">최상 컨디션</button>
+                            <button class="button button--preset" data-condition="좋음" data-focus="30" data-rest="5">좋은 컨디션</button>
+                            <button class="button button--preset active" data-condition="보통" data-focus="25" data-rest="5">보통 컨디션</button>
+                            <button class="button button--preset" data-condition="나쁨" data-focus="25" data-rest="10">나쁜 컨디션</button>
                         </div>
                         <div class="settings__sound">
-                            <label for="alarm-sound-select">알람 소리: </label>
+                            <label for="alarm-sound-select">알람 선택</label>
                             <select id="alarm-sound-select"></select>
                         </div>
                     </div>
                 </details>
                 <div class="main-actions">
-                    <button id="weekly-report-btn" class="button button--secondary">주간 회고</button>
+                    <button id="weekly-report-btn" class="button button--secondary">주간 리포트</button>
                     <button id="my-systems-btn" class="button button--secondary">나의 시스템</button>
-                    <button id="end-day-btn" class="button button--primary">하루 마감</button>
+                    <button id="end-day-btn" class="button button--primary">오늘 하루 분석하기</button>
                 </div>
             </footer>
         </main>
     </div>
 
-    <!-- ===== 모달 레이어 ===== -->
     <div id="modal-layer">
-        <!-- 세션 기록 모달 -->
         <div id="log-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="log-modal-title">
             <div class="modal__overlay" data-close-modal></div>
             <div class="modal__content text-left">
                 <button class="modal__close-btn" aria-label="Close dialog" data-close-modal>&times;</button>
-                <h2 id="log-modal-title">세션 기록</h2>
+                <h2 id="log-modal-title">집중 돌아보기</h2>
                 <form id="log-form">
                     <div class="form-field">
-                        <label for="log-activity">지난 시간 동안 무엇에 집중했나요?</label>
+                        <label for="log-activity">방금, 무엇에 집중하셨나요?</label>
                         <textarea id="log-activity" rows="3" required></textarea>
                     </div>
                     <div class="form-field">
-                        <label>집중을 방해한 '마찰'이 있었나요? (다중 선택 가능)</label>
+                        <label>집중을 방해한 '마찰'을 발견했나요? (다중 선택 가능)</label>
                         <div id="friction-tags" class="tag-group"></div>
                     </div>
                      <div class="form-field">
-                        <label>마찰 발생 시 느꼈던 감정은 무엇인가요? (다중 선택 가능)</label>
+                        <label>어떤 감정과 함께였나요? (다중 선택 가능)</label>
                         <div id="emotion-tags" class="tag-group"></div>
                     </div>
                     <div class="form-field">
-                        <label for="distraction-input">딴생각 저장소 (떠오른 생각 입력 후 Enter)</label>
+                        <label for="distraction-input">떠오른 생각, 여기에 잠시 보관하세요 (입력 후 Enter)</label>
                         <input type="text" id="distraction-input" placeholder="예: 저녁 장보기">
                         <ul id="distraction-list"></ul>
                     </div>
-                    <button type="submit" class="button button--primary button--full">저장하고 휴식 시작</button>
+                    <button type="submit" class="button button--primary button--full">기록하고 휴식하기</button>
                 </form>
             </div>
         </div>
 
-        <!-- 데일리 리포트 모달 -->
         <div id="report-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="report-modal-title">
             <div class="modal__overlay" data-close-modal></div>
             <div class="modal__content">
                 <button class="modal__close-btn" aria-label="Close dialog" data-close-modal>&times;</button>
-                <h2 id="report-modal-title">데일리 리포트</h2>
+                <h2 id="report-modal-title">오늘 하루 성장 리포트</h2>
                 <div id="report-content" class="text-left"></div>
-                <button id="show-system-btn" class="button button--primary hidden button--full">시스템 제작</button>
+                <button id="show-system-btn" class="button button--primary hidden button--full">마찰 해결 시스템 만들기</button>
             </div>
         </div>
 
-        <!-- 시스템 제안 모달 -->
         <div id="system-suggestion-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="system-modal-title">
             <div class="modal__overlay" data-close-modal></div>
             <div class="modal__content">
                 <button class="modal__close-btn" aria-label="Close dialog" data-close-modal>&times;</button>
-                <h2 id="system-modal-title">안티-마찰 시스템 제안</h2>
+                <h2 id="system-modal-title">마찰 해결을 위한 시스템 제안</h2>
                 <p id="system-suggestion-text"></p>
-                <button id="adopt-system-btn" class="button button--primary button--full">이 시스템 채택하기</button>
+                <button id="adopt-system-btn" class="button button--primary button--full">나의 시스템으로 추가</button>
             </div>
         </div>
         
-        <!-- 나의 시스템 라이브러리 모달 -->
         <div id="my-systems-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="my-systems-title">
             <div class="modal__overlay" data-close-modal></div>
             <div class="modal__content">
                 <button class="modal__close-btn" aria-label="Close dialog" data-close-modal>&times;</button>
-                <h2 id="my-systems-title">나의 시스템 라이브러리</h2>
+                <h2 id="my-systems-title">나의 성장 시스템</h2>
                 <div id="my-systems-list"></div>
             </div>
         </div>
 
-        <!-- 세션 전환 모달 -->
         <div id="session-transition-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="transition-title">
             <div class="modal__overlay"></div>
             <div class="modal__content">
                 <p id="transition-icon" class="modal__icon">☕</p>
-                <h2 id="transition-title">집중 시간 종료!</h2>
+                <h2 id="transition-title">수고하셨어요! 잠시 숨을 고르세요</h2>
                 <p id="transition-message" class="modal__message">5분간 휴식을 시작합니다.</p>
                 <button id="transition-action-btn" class="button button--secondary">휴식 시작</button>
             </div>
         </div>
     </div>
     
-    <!-- 긍정 확언 오버레이 -->
     <div id="positive-priming">
         <p id="positive-priming-text"></p>
     </div>
 
-    <!-- 스크립트 로드 -->
     <script type="module" src="script.js"></script>
 </body>
 </html>
