@@ -33,12 +33,12 @@ import {
 // 여기에 Firebase 구성 객체를 붙여넣으세요.
 // ===================================================================================
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCRHNKmNBtTFbCeQhhGJsoxYwmqKu1f4uo",
+  authDomain: "pomodoro-os.firebaseapp.com",
+  projectId: "pomodoro-os",
+  storageBucket: "pomodoro-os.firebasestorage.app",
+  messagingSenderId: "338185932667",
+  appId: "1:338185932667:web:c5c9c46274db636d6777de"
 };
 
 
@@ -746,8 +746,18 @@ const App = (() => {
 
     return {
         init, mapAuthCodeToMessage,
-        handleLogin: (e) => { e.preventDefault(); Auth.handleSignIn(e.target.email.value, e.target.password.value); },
-        handleSignup: (e) => { e.preventDefault(); Auth.handleSignUp(e.target.email.value, e.target.password.value); },
+        handleLogin: (e) => { 
+            e.preventDefault(); 
+            const email = e.target.querySelector('#login-email').value;
+            const password = e.target.querySelector('#login-password').value;
+            Auth.handleSignIn(email, password); 
+        },
+        handleSignup: (e) => { 
+            e.preventDefault(); 
+            const email = e.target.querySelector('#signup-email').value;
+            const password = e.target.querySelector('#signup-password').value;
+            Auth.handleSignUp(email, password); 
+        },
         handleConditionSelect, handlePresetSelect, handleShowSystem
     };
 })();
@@ -757,3 +767,4 @@ const App = (() => {
 // 애플리케이션 진입점 (Entry Point)
 // ===================================================================================
 document.addEventListener('DOMContentLoaded', App.init);
+
