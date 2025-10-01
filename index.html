@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Friction-Zero OS</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Firebase SDK는 script.js에서 모듈 형태로 가져옵니다. -->
+    <!-- 파비콘 링크 추가 -->
+    <link id="favicon" rel="icon" href="icons/favicon-default.png" type="image/png">
 </head>
 <body>
     <div id="app-container">
@@ -72,31 +73,51 @@
                 </div>
             </section>
 
-            <!-- 타이머 화면 -->
-            <section id="timer-view" class="hidden">
-                <div class="timer">
-                    <p class="timer__mode">집중</p>
-                    <p class="timer__display">25:00</p>
-                    <div class="timer__controls">
-                        <button id="start-btn" class="button button--primary">시작</button>
-                        <button id="pause-btn" class="button button--secondary">일시정지</button>
-                        <button id="reset-btn" class="button">리셋</button>
+            <!-- 타이머 화면 래퍼 (오류 해결을 위해 추가) -->
+            <div id="timer-view-wrapper" class="hidden">
+                <!-- 기존 timer-view를 래퍼 안으로 이동 -->
+                <section id="timer-view">
+                    <div class="timer">
+                         <div class="timer__header">
+                            <p class="timer__mode">집중</p>
+                             <!-- pomodoro-display 요소 추가 -->
+                             <p id="pomodoro-display"></p>
+                        </div>
+                        <p class="timer__display">25:00</p>
+                        <div class="timer__controls">
+                            <button id="start-btn" class="button button--primary">시작</button>
+                            <button id="pause-btn" class="button button--secondary">일시정지</button>
+                            <button id="reset-btn" class="button">리셋</button>
+                        </div>
                     </div>
-                </div>
-
-                <div class="settings">
-                    <h3>뇌과학 프리셋</h3>
-                    <div class="settings__presets">
-                        <button class="button button--preset" data-focus="25" data-rest="5">25:05</button>
-                        <button class="button button--preset" data-focus="50" data-rest="10">50:10</button>
+    
+                    <div class="settings">
+                        <h3>뇌과학 프리셋</h3>
+                        <div class="settings__presets">
+                            <button class="button button--preset" data-focus="25" data-rest="5">25:05</button>
+                            <button class="button button--preset" data-focus="50" data-rest="10">50:10</button>
+                        </div>
+                        <!-- 알람 소리 선택 UI 추가 -->
+                        <div class="settings__sound">
+                            <label for="alarm-sound-select">알람 소리: </label>
+                            <select id="alarm-sound-select"></select>
+                        </div>
                     </div>
-                </div>
+                    
+                    <div class="main-actions">
+                         <!-- 주간 리포트 버튼 추가 -->
+                        <button id="weekly-report-btn" class="button button--secondary">주간 회고</button>
+                        <button id="my-systems-btn" class="button button--secondary">나의 시스템</button>
+                        <button id="end-day-btn" class="button button--primary">하루 마감</button>
+                    </div>
+                </section>
                 
-                <div class="main-actions">
-                    <button id="my-systems-btn" class="button button--secondary">나의 시스템</button>
-                    <button id="end-day-btn" class="button button--primary">하루 마감</button>
-                </div>
-            </section>
+                 <!-- 오늘의 집중 나무 섹션 추가 -->
+                 <section id="focus-forest">
+                    <h3>오늘의 집중 나무</h3>
+                    <div id="forest-display"></div>
+                </section>
+            </div>
         </main>
     </div>
 
@@ -105,7 +126,7 @@
         <!-- 세션 기록 모달 -->
         <div id="log-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="log-modal-title">
             <div class="modal__overlay" data-close-modal></div>
-            <div class="modal__content">
+            <div class="modal__content text-left">
                 <button class="modal__close-btn" aria-label="Close dialog" data-close-modal>&times;</button>
                 <h2 id="log-modal-title">세션 기록</h2>
                 <form id="log-form">
@@ -114,11 +135,11 @@
                         <textarea id="log-activity" rows="3" required></textarea>
                     </div>
                     <div class="form-field">
-                        <label>집중을 방해한 '마찰'이 있었나요?</label>
+                        <label>집중을 방해한 '마찰'이 있었나요? (다중 선택 가능)</label>
                         <div id="friction-tags" class="tag-group"></div>
                     </div>
                      <div class="form-field">
-                        <label>마찰 발생 시 느꼈던 감정은 무엇인가요?</label>
+                        <label>마찰 발생 시 느꼈던 감정은 무엇인가요? (다중 선택 가능)</label>
                         <div id="emotion-tags" class="tag-group"></div>
                     </div>
                     <div class="form-field">
@@ -137,7 +158,7 @@
             <div class="modal__content">
                 <button class="modal__close-btn" aria-label="Close dialog" data-close-modal>&times;</button>
                 <h2 id="report-modal-title">데일리 리포트</h2>
-                <div id="report-content"></div>
+                <div id="report-content" class="text-left"></div>
                 <button id="show-system-btn" class="button button--primary hidden">시스템 제작</button>
             </div>
         </div>
@@ -165,7 +186,23 @@
             </div>
         </div>
 
+        <!-- 세션 전환 모달 추가 -->
+        <div id="session-transition-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="transition-title">
+            <div class="modal__overlay"></div>
+            <div class="modal__content">
+                <p id="transition-icon" class="modal__icon">☕</p>
+                <h2 id="transition-title">집중 시간 종료!</h2>
+                <p id="transition-message" class="modal__message">5분간 휴식을 시작합니다.</p>
+                <button id="transition-action-btn" class="button button--secondary">휴식 시작</button>
+            </div>
+        </div>
     </div>
+    
+    <!-- 긍정 확언 오버레이 추가 -->
+    <div id="positive-priming">
+        <p id="positive-priming-text"></p>
+    </div>
+
     <script type="module" src="script.js"></script>
 </body>
 </html>
