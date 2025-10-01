@@ -154,7 +154,9 @@ const Favicon = (() => {
     };
 
     const set = (state) => {
-        faviconEl.href = icons[state] || icons.default;
+        if (faviconEl) {
+            faviconEl.href = icons[state] || icons.default;
+        }
     };
 
     return { set };
@@ -232,6 +234,11 @@ const UI = (() => {
         dom.positivePriming = document.getElementById('positive-priming');
         dom.positivePrimingText = document.getElementById('positive-priming-text');
         dom.weeklyReportBtn = document.getElementById('weekly-report-btn');
+    };
+    
+    const renderTagButtons = () => {
+        dom.frictionTagsContainer.innerHTML = frictionTags.map(tag => `<button type="button" class="tag-group__tag" data-tag="${tag}">${tag}</button>`).join('');
+        dom.emotionTagsContainer.innerHTML = emotionTags.map(tag => `<button type="button" class="tag-group__tag" data-tag="${tag}">${tag}</button>`).join('');
     };
 
     const renderSelectOptions = () => {
@@ -1053,3 +1060,4 @@ const App = (() => {
 // 애플리케이션 진입점 (Entry Point)
 // ===================================================================================
 document.addEventListener('DOMContentLoaded', App.init);
+
