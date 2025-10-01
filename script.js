@@ -5,20 +5,20 @@
 // 이 방식은 빌드 도구 없이 순수 JavaScript 환경에서 Firebase v9+ 모듈러 SDK를 사용하기 위함입니다.
 // ===================================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { 
-    getAuth, 
-    createUserWithEmailAndPassword, 
-    signInWithEmailAndPassword, 
-    signOut, 
-    onAuthStateChanged 
+import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { 
-    getFirestore, 
-    collection, 
-    addDoc, 
-    getDocs, 
-    query, 
-    where, 
+import {
+    getFirestore,
+    collection,
+    addDoc,
+    getDocs,
+    query,
+    where,
     Timestamp,
     orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -41,7 +41,7 @@ const firebaseConfig = {
 /**
  * @module FirebaseAPI
  * @description Firebase SDK와의 모든 상호작용을 추상화하여 제공하는 모듈.
- *              인증, Firestore 데이터베이스 CRUD 작업을 담당합니다.
+ * 인증, Firestore 데이터베이스 CRUD 작업을 담당합니다.
  */
 const FirebaseAPI = (() => {
     let app, auth, db;
@@ -113,14 +113,14 @@ const FirebaseAPI = (() => {
         const endOfDay = new Date(today.setHours(23, 59, 59, 999));
 
         const logsCollectionRef = collection(db, 'users', userId, 'logs');
-        const q = query(logsCollectionRef, 
-            where('timestamp', '>=', startOfDay), 
+        const q = query(logsCollectionRef,
+            where('timestamp', '>=', startOfDay),
             where('timestamp', '<=', endOfDay),
             orderBy('timestamp', 'asc')
         );
         
         const querySnapshot = await getDocs(q);
-        const logs =;
+        const logs = []; // [오류 1 수정]
         querySnapshot.forEach((doc) => {
             logs.push({ id: doc.id,...doc.data() });
         });
@@ -190,10 +190,10 @@ const UI = (() => {
      * 태그 버튼 그룹을 생성하여 DOM에 주입합니다.
      */
     const renderTagButtons = () => {
-        dom.frictionTagsContainer.innerHTML = frictionTags.map(tag => 
+        dom.frictionTagsContainer.innerHTML = frictionTags.map(tag =>
             `<button type="button" class="tag-group__tag" data-tag="${tag}">${tag}</button>`
         ).join('');
-        dom.emotionTagsContainer.innerHTML = emotionTags.map(tag => 
+        dom.emotionTagsContainer.innerHTML = emotionTags.map(tag =>
             `<button type="button" class="tag-group__tag" data-tag="${tag}">${tag}</button>`
         ).join('');
     };
@@ -283,9 +283,7 @@ const UI = (() => {
      * @param {string | null} email - 사용자 이메일
      */
     const updateUserEmail = (email) => {
-        dom.userEmail.textContent = email |
-
-| '';
+        dom.userEmail.textContent = email || ''; // [오류 2 수정]
     };
 
     /**
@@ -334,7 +332,7 @@ const UI = (() => {
             document.body.classList.add('body--modal-open');
             // Focus first focusable element in modal
             const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-            if (focusable.length) focusable.focus();
+            if (focusable.length) focusable[0].focus();
         } else {
             modal.classList.remove('modal--visible');
             modal.setAttribute('aria-hidden', 'true');
@@ -413,8 +411,9 @@ const UI = (() => {
         showSystemSuggestion,
         getLogFormData: () => {
             const activity = dom.logActivity.value;
-            const selectedFrictionTags =.map(t => t.dataset.tag);
-            const selectedEmotionTags =.map(t => t.dataset.tag);
+            // [오류 3, 4 수정]
+            const selectedFrictionTags = Array.from(dom.frictionTagsContainer.querySelectorAll('.tag-group__tag--selected')).map(t => t.dataset.tag);
+            const selectedEmotionTags = Array.from(dom.emotionTagsContainer.querySelectorAll('.tag-group__tag--selected')).map(t => t.dataset.tag);
             return { activity, frictionTags: selectedFrictionTags, emotionTags: selectedEmotionTags };
         }
     };
@@ -701,9 +700,7 @@ const Report = (() => {
             const frictionCounts = logs
                .flatMap(log => log.frictionTags)
                .reduce((acc, tag) => {
-                    acc[tag] = (acc[tag] |
-
-| 0) + 1;
+                    acc[tag] = (acc[tag] || 0) + 1; // [오류 5 수정]
                     return acc;
                 }, {});
 
@@ -712,7 +709,7 @@ const Report = (() => {
                .slice(0, 3)
                .map(([tag, count]) => ({ tag, count }));
             
-            const topFrictionTag = topFrictions.length > 0? topFrictions.tag : null;
+            const topFrictionTag = topFrictions.length > 0 ? topFrictions[0].tag : null; // [오류 6 수정]
 
             const insight = generateInsight(frictionCounts);
 
@@ -738,19 +735,13 @@ const Report = (() => {
      * @returns {string | null} 분석 문구 또는 null
      */
     const generateInsight = (frictionCounts) => {
-        if ((frictionCounts['업무 외 검색'] |
-
-| 0) >= 3) {
+        if ((frictionCounts['업무 외 검색'] || 0) >= 3) { // [오류 7 수정]
             return "패턴 분석: [업무 외 검색]으로 인해 집중력이 자주 분산되는 경향이 발견되었습니다. 특히 특정 주제에 대한 [호기심]이 함께 발생할 때 빈도가 높을 수 있습니다.";
         }
-        if ((frictionCounts['메신저 확인'] |
-
-| 0) >= 4) {
+        if ((frictionCounts['메신저 확인'] || 0) >= 4) { // [오류 7 수정]
             return "패턴 분석: [메신저 확인] 마찰이 잦습니다. 중요한 연락을 놓칠지 모른다는 [불안감]이 원인일 수 있습니다. 집중 시간에는 알림을 잠시 꺼두는 것을 고려해보세요.";
         }
-        if ((frictionCounts['불필요한 생각'] |
-
-| 0) >= 3) {
+        if ((frictionCounts['불필요한 생각'] || 0) >= 3) { // [오류 7 수정]
              return "패턴 분석: [불필요한 생각]이 집중을 방해하는 주요 원인으로 보입니다. 이는 [피로감]이 높을 때 더 자주 발생할 수 있습니다.";
         }
         return null;
@@ -786,8 +777,6 @@ const Report = (() => {
  * @description 애플리케이션의 전체적인 흐름을 제어하고 모듈들을 조율하는 최상위 컨트롤러.
  */
 const App = (() => {
-    let topFrictionTagForSystem = null;
-
     /**
      * Firebase 인증 에러 코드를 사용자 친화적인 메시지로 변환합니다.
      * @param {string} code - Firebase Auth 에러 코드
@@ -861,7 +850,7 @@ const App = (() => {
         const reportContent = document.getElementById('report-content');
         const topFrictionItem = reportContent.querySelector('.report__value li');
         if (topFrictionItem) {
-            const topFrictionText = topFrictionItem.textContent.split(' (');
+            const topFrictionText = topFrictionItem.textContent.split(' (')[0]; // [오류 8 수정]
             const suggestion = Report.getSystemSuggestion(topFrictionText);
             UI.showSystemSuggestion(suggestion);
         }
