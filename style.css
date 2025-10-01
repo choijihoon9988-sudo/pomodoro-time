@@ -121,7 +121,7 @@ h1, h2, h3 {
     max-width: 650px;
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.5rem; /* 간격 조정 */
 }
 
 .app-header {
@@ -154,7 +154,7 @@ h1, h2, h3 {
     font-size: 0.875rem;
 }
 
-#condition-selector, #timer-view {
+#condition-selector, #timer-view-wrapper { /* Wrapper 추가 */
     background-color: var(--surface-color);
     padding: 2.5rem;
     border-radius: var(--border-radius);
@@ -169,18 +169,64 @@ h1, h2, h3 {
     flex-wrap: wrap;
 }
 
-/* --- TIMER COMPONENT --- */
-.timer {
+
+/* --- DAILY GOAL --- */
+#daily-goal {
     margin-bottom: 2rem;
+}
+#daily-goal-label {
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+    display: block;
+}
+#daily-goal-input {
+    width: 80px;
+    padding: 0.5rem;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 1rem;
+    margin-right: 0.5rem;
+}
+
+#goal-progress-bar-container {
+    width: 100%;
+    background-color: #e9ecef;
+    border-radius: 20px;
+    height: 12px;
+    margin-top: 1rem;
+    overflow: hidden;
+}
+
+#goal-progress-bar {
+    width: 0%;
+    height: 100%;
+    background-color: var(--success-color);
+    border-radius: 20px;
+    transition: width 0.5s ease-in-out;
+}
+
+/* --- TIMER COMPONENT --- */
+
+.timer__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
 }
 
 .timer__mode {
     font-size: 1.5rem;
     font-weight: 600;
     color: var(--secondary-color);
-    margin: 0 0 0.5rem;
+    margin: 0;
     text-transform: uppercase;
     letter-spacing: 1px;
+}
+
+#pomodoro-display {
+    font-size: 1.2rem;
+    font-weight: 600;
 }
 
 .timer__display {
@@ -242,6 +288,11 @@ h1, h2, h3 {
     justify-content: center;
 }
 
+.button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .button:active {
     transform: translateY(1px);
 }
@@ -273,6 +324,13 @@ h1, h2, h3 {
 .button--preset:hover {
     background-color: #f8f9fa;
     color: var(--text-color);
+}
+.button--success {
+    background-color: var(--success-color);
+    color: white;
+}
+.button--success:hover {
+    background-color: #218838;
 }
 
 /* --- MODAL COMPONENT --- */
@@ -317,6 +375,10 @@ h1, h2, h3 {
     box-shadow: var(--box-shadow);
     transform: translateY(20px) scale(0.98);
     transition: transform 0.3s ease;
+    text-align: center; /* 모달 컨텐츠 기본 중앙정렬 */
+}
+.modal__content.text-left {
+    text-align: left;
 }
 
 .modal--visible .modal__content {
@@ -337,6 +399,7 @@ h1, h2, h3 {
 
 .modal .form-field {
     margin-bottom: 1.5rem;
+    text-align: left;
 }
 .modal .form-field label {
     display: block;
@@ -359,6 +422,23 @@ h1, h2, h3 {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
 }
+
+/* --- SESSION TRANSITION MODAL --- */
+#session-transition-modal .modal__icon {
+    font-size: 4rem;
+    line-height: 1;
+    margin-bottom: 1rem;
+}
+#session-transition-modal .modal__title {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+#session-transition-modal .modal__message {
+    font-size: 1.1rem;
+    color: var(--text-light-color);
+    margin-bottom: 2rem;
+}
+
 
 /* --- TAG GROUP COMPONENT --- */
 .tag-group {
@@ -395,6 +475,7 @@ h1, h2, h3 {
     margin-top: 0.75rem;
     max-height: 100px;
     overflow-y: auto;
+    text-align: left;
 }
 #distraction-list li {
     background-color: #f8f9fa;
@@ -447,6 +528,7 @@ h1, h2, h3 {
     background-color: #eef5fc;
     border-left: 4px solid var(--primary-color);
     border-radius: 4px;
+    text-align: left;
 }
 
 #show-system-btn {
@@ -462,6 +544,7 @@ h1, h2, h3 {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    text-align: left;
 }
 
 .system-card {
@@ -487,6 +570,7 @@ h1, h2, h3 {
     padding: 0.25rem 0.75rem;
     border-radius: 12px;
     font-weight: 600;
+    white-space: nowrap;
 }
 .system-card__description {
     color: var(--text-light-color);
@@ -499,8 +583,71 @@ h1, h2, h3 {
     font-size: 0.8rem;
     color: var(--text-light-color);
 }
-.system-card__footer button {
+
+.button--danger {
+    background-color: #dc3545;
+    color: white;
+}
+.button--danger:hover {
+    background-color: #c82333;
+}
+.system-card__footer .button--danger {
     font-size: 0.8rem;
     padding: 0.4rem 0.8rem;
-    background-color: var(--error-color);
+}
+
+/* --- POSITIVE PRIMING --- */
+#positive-priming {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.95);
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s, visibility 0.5s;
+}
+
+#positive-priming--visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+#positive-priming p {
+    font-size: 1.75rem;
+    font-weight: 600;
+    text-align: center;
+    max-width: 80%;
+    color: var(--primary-color);
+}
+
+/* FOCUS FOREST */
+#focus-forest {
+    background-color: var(--surface-color);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    text-align: center;
+    margin-top: 1.5rem;
+}
+
+#focus-forest h3 {
+    margin-top: 0;
+    font-size: 1.2rem;
+    color: var(--text-color);
+}
+
+#forest-display {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 0.5rem;
+    min-height: 50px;
+    font-size: 2.5rem;
+    line-height: 1;
 }
