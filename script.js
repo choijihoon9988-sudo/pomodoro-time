@@ -31,12 +31,12 @@ Chart.register(...registerables);
 // 🚨🚨🚨 중요: YOUR_NEW_... 값을 Firebase 프로젝트 (pomodoro-time-app)의 실제 정보로 변경하세요 🚨🚨🚨
 // ===================================================================================
 const firebaseConfig = {
-  apiKey: "YOUR_NEW_API_KEY_HERE",
-  authDomain: "pomodoro-time-app.firebaseapp.com",
-  projectId: "pomodoro-time-app",
-  storageBucket: "pomodoro-time-app.firebasestorage.app",
-  messagingSenderId: "YOUR_NEW_MESSAGING_SENDER_ID",
-  appId: "YOUR_NEW_APP_ID"
+  apiKey: "AIzaSyCr_ntgN9h3nTO4kE2L915QKjgOXkL38vw",
+  authDomain: "friction-zero-os.firebaseapp.com",
+  projectId: "friction-zero-os",
+  storageBucket: "friction-zero-os.firebasestorage.app",
+  messagingSenderId: "819091253027",
+  appId: "1:819091253027:web:40561c250cec97e51cce96"
 };
 
 
