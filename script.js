@@ -157,7 +157,7 @@ const UI = (() => {
             'transition-message', 'transition-action-btn', 'positive-priming', 'positive-priming-text',
             'timer-mode', 'timer-clock', 'rest-suggestion-container', 'total-trees-count', 'forest-dormant-message', 'forest-widget',
             'rest-suggestion-text', 'reset-confirm-modal', 'cancel-reset-btn', 'confirm-reset-btn',
-            'stats-modal', 'stats-period-select', 'stats-content'
+            'stats-modal', 'stats-period-select', 'stats-content', 'my-forest-visualization', 'frictionByTimeChart'
         ];
         ids.forEach(id => dom[id.replace(/-(\w)/g, (_, c) => c.toUpperCase())] = document.getElementById(id));
 
@@ -359,7 +359,12 @@ const UI = (() => {
             emotionTags: Array.from(dom.emotionTags.querySelectorAll('.tag-group__tag--selected')).map(t => t.dataset.tag)
         }),
         getDailyGoal: () => parseInt(dom.dailyGoalInput.value, 10),
-        getStatsDOM: () => ({ content: dom.statsContent, periodSelect: dom.statsPeriodSelect }),
+        getStatsDOM: () => ({ 
+            content: dom.statsContent, 
+            periodSelect: dom.statsPeriodSelect,
+            myForestVisualization: dom.myForestVisualization,
+            frictionByTimeChart: dom.frictionByTimeChart,
+        }),
         setSettings: (settings) => {
             if (dom.alarmSoundSelect) dom.alarmSoundSelect.value = settings.alarmSound;
             if (dom.restSoundSelect) dom.restSoundSelect.value = settings.restSound;
@@ -621,11 +626,10 @@ const Report = (() => {
 
 /**
  * @module Stats
- * @description 마찰 통계 대시보드 관리.
+ * @description '성장 리포트' 대시보드 관리.
  */
 const Stats = (() => {
-    let barChartInstance = null;
-    let sankeyChartInstance = null;
+    let frictionByTimeChartInstance = null;
     let areControllersRegistered = false; 
 
     const registerControllers = () => {
@@ -650,26 +654,37 @@ const Stats = (() => {
     
     const handlePeriodChange = async () => await render();
 
-    const analyzeEmotionFrictionPattern = (logs) => {
-        const connections = {};
+    const analyzeFrictionByTimeOfDay = (logs) => {
+        const timeSlots = { '오전 (6-12)': 0, '점심 (12-14)': 0, '오후 (14-18)': 0, '저녁 (18-24)': 0, '밤 (0-6)': 0 };
         logs.forEach(log => {
-            if (log.emotionTags.length > 0 && log.frictionTags.length > 0) {
-                log.emotionTags.forEach(emotion => {
-                    log.frictionTags.forEach(friction => {
-                        const key = `${emotion}|${friction}`;
-                        connections[key] = (connections[key] || 0) + 1;
-                    });
-                });
+            if (log.frictionTags.length > 0 && log.timestamp) {
+                const hour = log.timestamp.toDate().getHours();
+                if (hour >= 6 && hour < 12) timeSlots['오전 (6-12)'] += log.frictionTags.length;
+                else if (hour >= 12 && hour < 14) timeSlots['점심 (12-14)'] += log.frictionTags.length;
+                else if (hour >= 14 && hour < 18) timeSlots['오후 (14-18)'] += log.frictionTags.length;
+                else if (hour >= 18 && hour < 24) timeSlots['저녁 (18-24)'] += log.frictionTags.length;
+                else timeSlots['밤 (0-6)'] += log.frictionTags.length;
             }
         });
+        return timeSlots;
+    };
 
-        const nodes = [...new Set(logs.flatMap(l => [...l.emotionTags, ...l.frictionTags]))];
-        const data = Object.entries(connections).map(([key, value]) => {
-            const [from, to] = key.split('|');
-            return { from, to, flow: value };
-        });
-        
-        return { labels: nodes, data };
+    const renderMyForest = (forestData) => {
+        const dom = UI.getStatsDOM();
+        if (!dom.myForestVisualization) return;
+
+        let forestHTML = '';
+        if (!forestData || forestData.totalTrees === 0) {
+            forestHTML = '<p>아직 심은 나무가 없어요. 오늘 첫 나무를 심어보세요!</p>';
+        } else {
+            for (let i = 0; i < forestData.totalTrees; i++) {
+                // 'forest' 배열에 저장된 특별 나무 정보를 바탕으로 시각화 (향후 확장 가능)
+                // 지금은 단순 개수 기반으로 일부를 특별 나무로 표시
+                const isSpecial = i < forestData.specialTreesCount;
+                forestHTML += `<span class="tree-icon ${isSpecial ? 'special' : ''}">${isSpecial ? '✨' : '🌳'}</span>`;
+            }
+        }
+        dom.myForestVisualization.innerHTML = forestHTML;
     };
     
     const render = async () => {
@@ -679,7 +694,7 @@ const Stats = (() => {
         if (!user) return;
         const dom = UI.getStatsDOM();
         if (!dom.content) return;
-        dom.content.innerHTML = '<p>통계 데이터를 불러오는 중입니다...</p>';
+        dom.content.innerHTML = '<p>성장 리포트를 불러오는 중입니다...</p>';
 
         try {
             const days = parseInt(dom.periodSelect.value, 10);
@@ -688,79 +703,50 @@ const Stats = (() => {
             startDate.setDate(endDate.getDate() - days);
 
             const logs = await FirebaseAPI.getLogsByDateRange(user.uid, startDate, endDate);
+            
+            // 나의 숲 데이터 렌더링
+            const forestData = Gamification.getForestData();
+            renderMyForest(forestData);
 
             if (logs.length === 0) {
-                dom.content.innerHTML = '<p>선택하신 기간의 데이터가 없습니다.</p>';
+                dom.content.innerHTML += '<p>선택하신 기간의 데이터가 없습니다.</p>';
+                // 숲 시각화는 유지되도록 구조 변경
+                const container = document.getElementById('friction-by-time-chart-container');
+                if (container) container.innerHTML = '<p>선택하신 기간의 데이터가 없습니다.</p>';
                 return;
             }
 
-            const frictionCounts = logs.flatMap(log => log.frictionTags).reduce((acc, tag) => ({ ...acc, [tag]: (acc[tag] || 0) + 1 }), {});
-            const sortedFrictions = Object.entries(frictionCounts).sort(([,a],[,b]) => b - a);
-            const emotionFrictionData = analyzeEmotionFrictionPattern(logs);
-
-            dom.content.innerHTML = `
-                <div class="report__stat">
-                    <p class="report__title">가장 자주 나타난 방해 요인</p>
-                    <ul class="report__list">
-                        ${sortedFrictions.slice(0, 3).map(([tag, count]) => `<li>${tag} (${count}회)</li>`).join('') || '<li>기록된 방해 요인이 없습니다.</li>'}
-                    </ul>
-                </div>
-                <div><canvas id="frictionBarChart"></canvas></div>
-                <div class="report__stat" style="margin-top: 2rem;">
-                    <p class="report__title">감정-방해 요인 패턴 분석</p>
-                </div>
-                <div><canvas id="emotionFrictionSankeyChart"></canvas></div>
-                <p class="stats-insight">${generateInsight(sortedFrictions[0]?.[0])}</p>
-            `;
-
-            if (barChartInstance) barChartInstance.destroy();
-            const barCtx = document.getElementById('frictionBarChart')?.getContext('2d');
-            if (barCtx) {
-                barChartInstance = new Chart(barCtx, {
-                    type: 'bar',
+            const frictionByTimeData = analyzeFrictionByTimeOfDay(logs);
+            
+            // 시간대별 차트 렌더링
+            if (frictionByTimeChartInstance) frictionByTimeChartInstance.destroy();
+            const timeCtx = dom.frictionByTimeChart?.getContext('2d');
+            
+            if (timeCtx) {
+                frictionByTimeChartInstance = new Chart(timeCtx, {
+                    type: 'line',
                     data: {
-                        labels: sortedFrictions.map(([tag]) => tag),
+                        labels: Object.keys(frictionByTimeData),
                         datasets: [{
-                            label: '방해 요인 횟수',
-                            data: sortedFrictions.map(([, count]) => count),
-                            backgroundColor: 'rgba(59, 91, 219, 0.7)',
+                            label: '시간대별 방해 요인',
+                            data: Object.values(frictionByTimeData),
+                            borderColor: 'rgba(59, 91, 219, 0.7)',
+                            backgroundColor: 'rgba(59, 91, 219, 0.1)',
+                            fill: true,
+                            tension: 0.4
                         }]
                     },
-                    options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } }
-                });
-            }
-
-            if (sankeyChartInstance) sankeyChartInstance.destroy();
-            const sankeyCtx = document.getElementById('emotionFrictionSankeyChart')?.getContext('2d');
-            if (sankeyCtx && emotionFrictionData.data.length > 0) {
-                const { Chart } = window;
-                sankeyChartInstance = new Chart(sankeyCtx, {
-                    type: 'sankey',
-                    data: {
-                        labels: emotionFrictionData.labels,
-                        datasets: [{ data: emotionFrictionData.data }]
-                    },
-                    options: {
-                        plugins: {
-                            tooltip: {
-                                callbacks: {
-                                    label: (context) => `${context.raw.from} -> ${context.raw.to}: ${context.raw.flow}회`
-                                }
-                            }
-                        }
+                    options: { 
+                        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, 
+                        plugins: { legend: { display: false } }
                     }
                 });
             }
 
         } catch (error) {
-            console.error("통계 렌더링 오류:", error);
-            dom.content.innerHTML = '<p>통계를 불러오는 중 오류가 발생했습니다.</p>';
+            console.error("성장 리포트 렌더링 오류:", error);
+            dom.content.innerHTML = '<p>리포트를 불러오는 중 오류가 발생했습니다.</p>';
         }
-    };
-
-    const generateInsight = (topFriction) => {
-        if (!topFriction) return "데이터가 충분히 쌓이면 더 깊이 있는 분석을 제공해 드릴게요.";
-        return `가장 큰 방해 요인은 [${topFriction}]이었네요. 이 문제를 해결할 나만의 규칙을 만들어보는 건 어떨까요?`;
     };
 
     return { show, handlePeriodChange };
@@ -810,7 +796,7 @@ const Systems = (() => {
  * @description '성장의 숲' 시스템을 포함한 모든 게임화 요소 관리
  */
 const Gamification = (() => {
-    let profile = { level: 1, totalFocusMinutes: 0, streak: 0, lastActiveDate: null, badges: [], totalTrees: 0, dailyProgressLog: {}, isDormant: false };
+    let profile = { level: 1, totalFocusMinutes: 0, streak: 0, lastActiveDate: null, badges: [], totalTrees: 0, forest: [], dailyProgressLog: {}, isDormant: false };
     let dailyProgress = { seedGoal: 8, seedsCompleted: 0, goalSet: false, specialTreesToday: [] };
     let consecutiveFocusSessions = 0;
     const getTodayString = () => new Date().toISOString().split('T')[0];
@@ -904,7 +890,7 @@ const Gamification = (() => {
         }
         
         profile.totalTrees = (profile.totalTrees || 0) + progress.seedsCompleted;
-        // 향후 나무 종류 저장을 위해 forest 배열에 추가
+        
         const newTreesData = { date: todayStr, count: progress.seedsCompleted, specialCount: progress.specialTreesToday.length };
         if (!profile.forest) profile.forest = [];
         profile.forest.push(newTreesData);
@@ -928,7 +914,6 @@ const Gamification = (() => {
             } else {
                 profile.streak = 1; // 스트릭 깨지고 다시 시작
             }
-            // lastActiveDate는 finalizeDailyGrowth에서 이미 업데이트 됨
             await saveProfile();
         }
     };
@@ -957,13 +942,22 @@ const Gamification = (() => {
         await FirebaseAPI.updateUserProfile(user.uid, { dailyProgressLog: profile.dailyProgressLog });
     };
 
+    const getForestData = () => {
+        const specialTreesCount = (profile.forest || []).reduce((sum, day) => sum + (day.specialCount || 0), 0);
+        return {
+            totalTrees: profile.totalTrees || 0,
+            specialTreesCount: specialTreesCount
+        };
+    };
+
     return { 
         loadProfile, 
         setSeedGoal, 
         updateFocusSession, 
         updateStreak, 
         finalizeDailyGrowth,
-        isForestDormant: () => profile.isDormant
+        isForestDormant: () => profile.isDormant,
+        getForestData,
     };
 })();
 
@@ -1015,3 +1009,4 @@ const App = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);
+
