@@ -665,6 +665,29 @@ input:checked + .toggle-switch:before {
 #stats-content canvas { max-height: 250px; }
 .stats-insight { margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-light-color); line-height: 1.6; }
 
+#my-forest-visualization {
+    background-color: var(--background-color);
+    border-radius: var(--border-radius-md);
+    padding: 1.5rem;
+    min-height: 150px;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+.tree-icon {
+    font-size: 1.75rem;
+    line-height: 1;
+}
+
+.tree-icon.special {
+    filter: drop-shadow(0 0 3px #FBBF24);
+}
+
+#friction-by-time-chart-container {
+    padding: 1.5rem;
+}
 
 /* --- MY SYSTEMS --- */
 #my-systems-list { display: flex; flex-direction: column; gap: 1.5rem; text-align: left; }
@@ -699,3 +722,4 @@ input:checked + .toggle-switch:before {
     from { opacity: 0; transform: scale(0.95); }
     to { opacity: 1; transform: scale(1); }
 }
+

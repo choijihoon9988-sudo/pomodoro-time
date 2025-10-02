@@ -105,7 +105,7 @@
                     </div>
                 </details>
                 <div class="main-actions">
-                    <button id="stats-btn" class="button button--secondary">내 통계 보기</button>
+                    <button id="stats-btn" class="button button--secondary">성장 리포트 보기</button>
                     <button id="my-systems-btn" class="button button--secondary">나의 성장 규칙</button>
                     <button id="end-day-btn" class="button button--primary">하루 마무리</button>
                 </div>
@@ -157,13 +157,24 @@
             <div class="modal__content text-left">
                 <button class="modal__close-btn" aria-label="Close dialog" data-close-modal>&times;</button>
                 <div class="stats-header">
-                    <h2 id="stats-modal-title">통계</h2>
+                    <h2 id="stats-modal-title">성장 리포트</h2>
                     <select id="stats-period-select">
                         <option value="7">최근 7일</option>
                         <option value="30">최근 30일</option>
                     </select>
                 </div>
-                <div id="stats-content"></div>
+                <div id="stats-content">
+                    <!-- '나의 숲' 시각화가 여기에 렌더링됩니다. -->
+                    <div id="my-forest-visualization"></div>
+                    
+                    <div class="widget__divider"></div>
+                    
+                    <!-- 시간대별 마찰 분석 차트가 여기에 렌더링됩니다. -->
+                    <div id="friction-by-time-chart-container" class="report__stat">
+                        <p class="report__title">시간대별 방해 요인 발생 빈도</p>
+                        <canvas id="frictionByTimeChart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -218,3 +229,4 @@
     <script type="module" src="script.js?v=4"></script> 
 </body>
 </html>
+
