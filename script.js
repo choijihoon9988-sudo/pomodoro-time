@@ -2,7 +2,6 @@
 // ===================================================================================
 // Firebase SDK v9+ (모듈러)
 // ===================================================================================
-// 수정됨: 올바른 URL 문자열로 변경
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
     getAuth,
@@ -10,7 +9,7 @@ import {
     signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"; // 수정됨: 올바른 URL 문자열로 변경
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
     getFirestore,
     collection,
@@ -26,16 +25,16 @@ import {
     orderBy,
     serverTimestamp,
     writeBatch
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"; // 수정됨: 올바른 URL 문자열로 변경
-// Chart.js import 수정: 모든 기능이 포함된 esm(ES Module) 번들로 변경
-import { Chart, registerables } from 'https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.esm.js'; // 수정됨: 올바른 URL 문자열로 변경
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// ✅ 수정됨: cdn.jsdelivr.net으로 올바른 주소로 변경
+import { Chart, registerables } from 'https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.esm.js';
 
 // Chart.js의 모든 구성 요소를 등록합니다.
 Chart.register(...registerables);
 
 
 // ===================================================================================
-// Firebase 프로젝트 구성 정보 (✅ 새 계정 정보로 업데이트됨)
+// Firebase 프로젝트 구성 정보
 // ===================================================================================
 const firebaseConfig = {
   apiKey: "AIzaSyCr_ntgN9h3nTO4kE2L915QKjgOXkL38vw",
@@ -55,7 +54,6 @@ const FirebaseAPI = (() => {
     let app, auth, db;
 
     const init = () => {
-        // ✅ 수정됨: API 키 유효성 검사를 더 유연하게 변경
         if (!firebaseConfig.apiKey || firebaseConfig.apiKey.length < 20) {
             console.error("Firebase 구성 정보가 유효하지 않습니다. script.js 파일의 firebaseConfig 객체를 확인해주세요.");
             alert("서비스 연결 설정이 올바르지 않습니다. 관리자에게 문의해주세요.");
