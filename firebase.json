@@ -1,27 +1,7 @@
 {
-  "hosting": {
-    "public": ".",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ],
-    "headers": [
-      {
-        "source": "**/*.js",
-        "headers": [
-          {
-            "key": "Content-Security-Policy",
-            "value": "script-src 'self' https://www.gstatic.com/ https://cdn.jsdelivr.net/; object-src 'none'"
-          }
-        ]
-      }
-    ]
-  }
+  "projects": {
+    "default": "pomodoro-time-app"
+  },
+  "targets": {},
+  "etags": {}
 }

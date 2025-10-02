@@ -28,14 +28,15 @@ Chart.register(...registerables);
 
 // ===================================================================================
 // Firebase 프로젝트 구성 정보
+// 🚨🚨🚨 중요: YOUR_NEW_... 값을 Firebase 프로젝트 (pomodoro-time-app)의 실제 정보로 변경하세요 🚨🚨🚨
 // ===================================================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyCRHNKmNBtTFbCeQhhGJsoxYwmqKu1f4uo",
-  authDomain: "pomodoro-os.firebaseapp.com",
-  projectId: "pomodoro-os",
-  storageBucket: "pomodoro-os.firebasestorage.app",
-  messagingSenderId: "338185932667",
-  appId: "1:338185932667:web:c5c9c46274db636d6777de"
+  apiKey: "YOUR_NEW_API_KEY_HERE",
+  authDomain: "pomodoro-time-app.firebaseapp.com",
+  projectId: "pomodoro-time-app",
+  storageBucket: "pomodoro-time-app.firebasestorage.app",
+  messagingSenderId: "YOUR_NEW_MESSAGING_SENDER_ID",
+  appId: "YOUR_NEW_APP_ID"
 };
 
 
@@ -47,8 +48,8 @@ const FirebaseAPI = (() => {
     let app, db;
 
     const init = () => {
-        if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("YOUR_API_KEY")) {
-            console.error("Firebase 구성 정보가 유효하지 않습니다. script.js 파일의 firebaseConfig 객체를 확인해주세요.");
+        if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("YOUR_NEW_API_KEY")) {
+            console.error("Firebase 구성 정보가 유효하지 않습니다. script.js 파일의 firebaseConfig 객체를 실제 키로 확인/변경해주세요.");
             alert("서비스 연결 설정이 올바르지 않습니다. 관리자에게 문의해주세요.");
             return false;
         }
@@ -419,7 +420,8 @@ const Timer = (() => {
     const completeSession = () => {
         clearInterval(state.timerId);
         state.status = 'idle';
-        alarmAudio?.play();
+        // 404 오류 방지 주석 해제: 실제 파일 경로와 일치하는 경우 주석을 풀어야 합니다.
+        // alarmAudio?.play();
         Favicon.set('default');
 
         if (state.mode === '집중') {
@@ -431,7 +433,8 @@ const Timer = (() => {
             Notifications.show('수고하셨어요!', { body: `이제 ${config.restDuration}분간 휴식하며 재충전하세요.` });
             if (settings.enhancedRest) {
                  UI.showRestSuggestion(true, suggestion);
-                 if (settings.restSound !== 'none') { restAudio?.play(); }
+                 // 404 오류 방지 주석 해제: 실제 파일 경로와 일치하는 경우 주석을 풀어야 합니다.
+                 // if (settings.restSound !== 'none') { restAudio?.play(); }
             }
         } else {
             state.mode = '집중';
@@ -440,7 +443,8 @@ const Timer = (() => {
             Notifications.show('다시 집중할 시간', { body: `이제 ${config.focusDuration}분간 다시 몰입해보세요.` });
             if (settings.enhancedRest) {
                 UI.showRestSuggestion(false);
-                restAudio?.pause();
+                // 404 오류 방지 주석 해제
+                // restAudio?.pause();
             }
         }
         UI.updateTimerControls(state.status);
@@ -484,7 +488,7 @@ const Timer = (() => {
         UI.updateTimerDisplay(formatTime(state.remainingSeconds), state.mode, state.remainingSeconds, state.totalSeconds);
         UI.updateTimerControls(state.status);
         UI.showRestSuggestion(false);
-        restAudio?.pause();
+        // restAudio?.pause();
     };
 
     const applySettings = (newSettings) => {
@@ -852,14 +856,16 @@ const App = (() => {
         const user = Auth.getCurrentUser();
         if (!user) return;
         const settings = { [type]: value };
-        Timer.applySettings(settings);
+        // 404 오류 방지 주석 처리 해제
+        // Timer.applySettings(settings); 
         await FirebaseAPI.updateUserSettings(user.uid, settings);
     };
     const handleEnhancedRestToggle = async (e) => {
         const user = Auth.getCurrentUser();
         if (!user) return;
         const enabled = e.target.checked;
-        Timer.applySettings({ enhancedRest: enabled });
+        // 404 오류 방지 주석 처리 해제
+        // Timer.applySettings({ enhancedRest: enabled }); 
         UI.toggleEnhancedRestUI(enabled);
         await FirebaseAPI.updateUserSettings(user.uid, { enhancedRest: enabled });
     };
