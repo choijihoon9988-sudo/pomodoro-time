@@ -20,7 +20,7 @@ import {
     writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// ✅ 수정됨: Chart.js 관련 import 코드는 모두 삭제되었습니다.
+// Chart.js 관련 import 코드는 모두 삭제되었습니다.
 
 // ===================================================================================
 // Firebase 프로젝트 구성 정보
@@ -418,14 +418,14 @@ const Timer = (() => {
 
         if (state.mode === '집중 시간') {
             Gamification.updateFocusSession(config.focusDuration);
-            Logger.triggerLogPopup(); // ✅ 변경됨: 세션 종료 후 로그 팝업 호출
+            Logger.triggerLogPopup(); // 세션 종료 후 로그 팝업 호출
         } else {
             // 휴식 시간 종료 후 바로 다음 집중 세션 시작
             startNextFocusSession();
         }
     };
     
-    // ✅ 추가됨: 로그 기록 후 다음 세션을 시작하기 위한 함수
+    // 로그 기록 후 다음 세션을 시작하기 위한 함수
     const startNextPhase = () => {
         if(state.mode === '집중 시간') { // 이제 휴식 시간으로 전환
             state.mode = '휴식 시간';
@@ -547,7 +547,7 @@ const Logger = (() => {
             distractions = [];
             UI.resetLogForm();
             UI.toggleModal('log-modal', false);
-            Timer.startNextPhase(); // ✅ 변경됨: 로그 기록 후 다음 단계(휴식 또는 다음 세션) 시작
+            Timer.startNextPhase(); // 로그 기록 후 다음 단계(휴식 또는 다음 세션) 시작
         } catch (error) { console.error("기록 저장 중 오류:", error); alert("기록 저장 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요."); }
     };
     return { triggerLogPopup, handleLogSubmit, handleDistractionInput };
@@ -605,13 +605,26 @@ const Report = (() => {
  * @description 마찰 통계 대시보드 관리.
  */
 const Stats = (() => {
-    // ✅ 수정됨: Chart.js 라이브러리에서 필요한 객체들을 전역 스코프에서 가져옵니다.
-    const { Chart, SankeyController, Flow } = window;
-    // ✅ 수정됨: Sankey 컨트롤러를 명시적으로 등록합니다.
-    Chart.register(SankeyController, Flow);
-
     let barChartInstance = null;
     let sankeyChartInstance = null;
+    let areControllersRegistered = false; // 컨트롤러가 한 번만 등록되도록 보장하는 플래그
+
+    // 컨트롤러를 지연 등록하는 함수
+    const registerControllers = () => {
+        if (areControllersRegistered) return;
+        try {
+            const { Chart, SankeyController, Flow } = window;
+            // window 객체에 컨트롤러가 로드되었는지 확인
+            if (Chart && SankeyController && Flow) {
+                Chart.register(SankeyController, Flow);
+                areControllersRegistered = true;
+            } else {
+                console.error('Chart.js 또는 Sankey 컨트롤러를 window 객체에서 찾을 수 없습니다.');
+            }
+        } catch (e) {
+            console.error('Chart.js 컨트롤러 등록에 실패했습니다:', e);
+        }
+    };
 
     const show = async () => {
         UI.toggleModal('stats-modal', true);
@@ -643,6 +656,8 @@ const Stats = (() => {
     };
     
     const render = async () => {
+        registerControllers(); // 차트를 렌더링하기 직전에 컨트롤러 등록을 시도
+
         const user = Auth.getCurrentUser();
         if (!user) return;
         const dom = UI.getStatsDOM();
@@ -701,6 +716,7 @@ const Stats = (() => {
             if (sankeyChartInstance) sankeyChartInstance.destroy();
             const sankeyCtx = document.getElementById('emotionFrictionSankeyChart')?.getContext('2d');
             if (sankeyCtx && emotionFrictionData.data.length > 0) {
+                const { Chart } = window; // 전역 Chart 객체를 다시 참조
                 sankeyChartInstance = new Chart(sankeyCtx, {
                     type: 'sankey',
                     data: {
@@ -808,7 +824,7 @@ const Gamification = (() => {
         dailyProgress.goalSet = true;
         profile.dailyGoals.defaultGoal = goal;
 
-        UI.updateForestDisplay(dailyProgress.energy, dailyProgress.goal);
+        UI.updateForestDisplay(daily.energy, dailyProgress.goal);
         UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
         UI.lockGoalSetting(true);
 
