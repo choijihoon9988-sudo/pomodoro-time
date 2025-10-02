@@ -602,6 +602,7 @@ const Report = (() => {
         };
         return { ...(suggestions[tag] || { title: "나만의 규칙 만들기", description: `[${tag}] 문제를 해결하기 위한 자신만의 규칙을 만들어보세요. 예를 들어, [주변 소음]이 문제라면 '노이즈 캔슬링 헤드폰 사용하기' 같은 규칙을 만들 수 있어요.` }), targetFriction: tag };
     };
+ // Report 모듈 내부
     return { generateDailyReport, getSystemSuggestion, getCurrentReportData: () => currentReportData };
 })();
 
