@@ -1,16 +1,16 @@
 /* script.js */
-
 // ===================================================================================
 // Firebase SDK v9+ (모듈러)
 // ===================================================================================
-import { initializeApp } from "[https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js](https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js)";
+// 수정됨: 올바른 URL 문자열로 변경
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
     getAuth,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged
-} from "[https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js](https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js)";
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"; // 수정됨: 올바른 URL 문자열로 변경
 import {
     getFirestore,
     collection,
@@ -26,9 +26,9 @@ import {
     orderBy,
     serverTimestamp,
     writeBatch
-} from "[https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js](https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js)";
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"; // 수정됨: 올바른 URL 문자열로 변경
 // Chart.js import 수정: 모든 기능이 포함된 esm(ES Module) 번들로 변경
-import { Chart, registerables } from '[https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.esm.js](https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.esm.js)';
+import { Chart, registerables } from 'https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.esm.js'; // 수정됨: 올바른 URL 문자열로 변경
 
 // Chart.js의 모든 구성 요소를 등록합니다.
 Chart.register(...registerables);
@@ -935,4 +935,3 @@ const App = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);
-
