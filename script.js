@@ -27,7 +27,11 @@ import {
     serverTimestamp,
     writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { Chart } from 'https://cdn.jsdelivr.net/npm/chart.js/dist/chart.js';
+// Chart.js import 수정: 모든 기능이 포함된 esm(ES Module) 번들로 변경
+import { Chart, registerables } from 'https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.esm.js';
+
+// Chart.js의 모든 구성 요소를 등록합니다.
+Chart.register(...registerables);
 
 
 // ===================================================================================
@@ -932,3 +936,4 @@ const App = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);
+}
