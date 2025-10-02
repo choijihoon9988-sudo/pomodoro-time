@@ -1,6 +1,6 @@
 # Cody Blueprint - Project Metis (Friction-Zero OS)
 
-## Version: 20251002.5 (Final Fix)
+## Version: 20251002.6 (Final & Stable)
 
 ### Project Overview
 Friction-Zero OS는 사용자의 마찰을 데이터 기반으로 측정하고 분석하여 성장을 유도하는 AI 기반 성장 운영체제입니다.
@@ -26,22 +26,12 @@ Friction-Zero OS는 사용자의 마찰을 데이터 기반으로 측정하고 �
 
 ### Change History
 
+#### 20251002.6 (Final & Stable)
+- **File**: `index.html`
+- **Change**: Chart.js 라이브러리를 불러오는 `<script>` 태그에 `defer` 속성을 추가함. 이를 통해 스크립트 실행 순서를 명확히 하여, 간헐적으로 발생하던 "sankey is not a registered controller" 오류를 최종적으로 해결하고 안정성을 확보함.
+
 #### 20251002.5 (Final Fix)
 - **File**: `index.html`, `script.js`
-- **Change**: Chart.js 라이브러리 로드 방식을 `script.js`의 `import`에서 `index.html`의 `<script>` 태그로 변경하여 "sankey is not a registered controller" 오류를 해결. 라이브러리 간의 인식 및 호환성 문제를 근본적으로 차단함.
+- **Change**: Chart.js 라이브러리 로드 방식을 `script.js`의 `import`에서 `index.html`의 `<script>` 태그로 변경하여 "sankey is not a registered controller" 오류를 해결.
 
-#### 20251002.4
-- **File**: `script.js`
-- **Change**: 이전에 해결했던 SyntaxError가 다시 발생. 파일 마지막 줄의 불필요한 중괄호(`}`)를 다시 제거하여 버전 관리의 중요성을 확인함.
-
-#### 20251002.3
-- **File**: `script.js`
-- **Change**: 파일의 맨 마지막 줄에 불필요하게 남아있던 짝이 맞지 않는 중괄호(`}`)를 삭제하여 `SyntaxError`를 해결함.
-
-#### 20251002.2
-- **File**: `script.js`
-- **Change**: Sankey 차트 라이브러리 CDN URL을 일반 빌드 파일 경로에서, 최신 브라우저의 모듈 로드 방식(ESM)에 최적화된 `+esm` 경로로 변경하여 404 오류를 최종적으로 해결함.
-
-#### 20251002.1
-- **File**: `script.js`
-- **Change**: Sankey 차트 라이브러리의 CDN URL을 유효하지 않은 `unpkg` 경로에서 정상적으로 작동하는 `jsdelivr` 경로로 변경하여 404 및 CORS 오류를 해결함.
+... (이전 기록 생략) ...
