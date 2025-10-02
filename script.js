@@ -48,8 +48,8 @@ const FirebaseAPI = (() => {
 
     const init = () => {
         if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("YOUR_NEW_API_KEY")) {
-            console.error("Firebase 구성 정보가 유효하지 않습니다. script.js 파일의 firebaseConfig 객체를 실제 키로 확인/변경해주세요.");
-            alert("서비스 연결 설정이 올바르지 않습니다. 관리자에게 문의해주세요.");
+            console.error("Firebase 설정이 올바르지 않습니다. 관리자에게 문의하거나 설정을 다시 확인해주세요.");
+            alert("서비스 연결에 문제가 발생했습니다. 잠시 후 다시 시도하거나 관리자에게 문의해주세요.");
             return false;
         }
         app = initializeApp(firebaseConfig);
@@ -220,7 +220,7 @@ const UI = (() => {
         const percentage = total > 0 ? (total - remaining) / total : 0;
         if(dom.timerProgressTime) {
             dom.timerProgressTime.style.strokeDashoffset = CIRCLE_CIRCUMFERENCE * (1 - percentage);
-            dom.timerProgressTime.style.stroke = mode === '집중' ? 'var(--primary-color)' : 'var(--success-color)';
+            dom.timerProgressTime.style.stroke = mode === '집중 시간' ? 'var(--primary-color)' : 'var(--success-color)';
         }
     };
 
@@ -232,7 +232,7 @@ const UI = (() => {
 
     const updateTimerControls = (state) => {
         if (!dom.startBtn || !dom.pauseBtn) return;
-        dom.startBtn.textContent = state === 'paused' ? '다시 집중' : '집중 시작';
+        dom.startBtn.textContent = state === 'paused' ? '집중 이어하기' : '집중하기';
         dom.startBtn.classList.toggle('hidden', state === 'running');
         dom.pauseBtn.classList.toggle('hidden', state !== 'running');
     };
@@ -257,12 +257,12 @@ const UI = (() => {
         for (let i = 0; i < total; i++) {
             html += `<span class="session-icon ${i < completed ? 'completed' : ''}" style="color: ${i < completed ? 'var(--primary-color)' : 'var(--border-color)'}">🍅</span>`;
         }
-        dom.forestDisplay.innerHTML = html || '<span style="font-size: 0.9rem; color: var(--text-light-color);">목표를 설정하고 집중을 시작하세요.</span>';
+        dom.forestDisplay.innerHTML = html || '<span style="font-size: 0.9rem; color: var(--text-light-color);">오늘의 목표를 설정하고 집중을 시작해 보세요.</span>';
     };
 
     const updateGoalProgress = (current, total) => {
         if (!dom.currentEnergy || !dom.totalGoal) return;
-        dom.currentEnergy.textContent = current.toFixed(1);
+        dom.currentEnergy.textContent = current;
         dom.totalGoal.textContent = total;
         if(dom.dailyGoalInput) dom.dailyGoalInput.value = total;
 
@@ -302,10 +302,10 @@ const UI = (() => {
     const renderReport = (reportData) => {
         if (!dom.reportContent) return;
         const { totalFocusMinutes, energy, topFrictions, insight, badges } = reportData;
-        const topFrictionsHTML = topFrictions.length > 0 ? topFrictions.map(f => `<li>${f.tag} (${f.count}회)</li>`).join('') : '<li>오늘은 마찰 없이 순항하셨네요! 멋져요.</li>';
+        const topFrictionsHTML = topFrictions.length > 0 ? topFrictions.map(f => `<li>${f.tag} (${f.count}회)</li>`).join('') : '<li>오늘은 방해 요인 없이 순항하셨네요! 멋져요.</li>';
         const badgesHTML = badges?.length > 0 ? `<div class="report__stat"><p class="report__title">새로운 성장 배지</p><ul class="report__list">${badges.map(b => `<li>🏅 ${b.name}</li>`).join('')}</ul></div>` : '';
 
-        dom.reportContent.innerHTML = `<div class="report__grid"><div class="report__stat"><p class="report__title">총 몰입 시간</p><p class="report__value">${totalFocusMinutes}분</p></div><div class="report__stat"><p class="report__title">오늘 얻은 성장 에너지</p><p class="report__value">${energy.toFixed(1)}</p></div></div>${badgesHTML}<div class="report__stat"><p class="report__title">성장을 방해한 주요 마찰</p><ul class="report__list">${topFrictionsHTML}</ul></div>${insight ? `<div class="report__insight"><p>${insight}</p></div>` : ''}`;
+        dom.reportContent.innerHTML = `<div class="report__grid"><div class="report__stat"><p class="report__title">총 몰입 시간</p><p class="report__value">${totalFocusMinutes}분</p></div><div class="report__stat"><p class="report__title">완료한 집중 세트</p><p class="report__value">${energy}세트</p></div></div>${badgesHTML}<div class="report__stat"><p class="report__title">주요 방해 요인</p><ul class="report__list">${topFrictionsHTML}</ul></div>${insight ? `<div class="report__insight"><p>${insight}</p></div>` : ''}`;
         if (dom.showSystemBtn) dom.showSystemBtn.classList.toggle('hidden', !reportData.topFrictionTag);
         toggleModal('report-modal', true);
     };
@@ -329,7 +329,7 @@ const UI = (() => {
 
     const renderMySystems = (systems) => {
         if (!dom.mySystemsList) return;
-        dom.mySystemsList.innerHTML = systems.length === 0 ? `<p>아직 추가된 성장 시스템이 없어요. 리포트를 통해 나만의 시스템을 만들어보세요.</p>` : systems.map(system => `<div class="system-card" data-id="${system.id}"><div class="system-card__header"><h3 class="system-card__title">${system.title}</h3><span class="system-card__tag">${system.targetFriction}</span></div><p class="system-card__description">${system.description}</p><div class="system-card__footer"><span>추가한 날짜: ${system.adoptedAt.toLocaleDateString()}</span><button class="button button--danger" data-action="delete-system">삭제</button></div></div>`).join('');
+        dom.mySystemsList.innerHTML = systems.length === 0 ? `<p>아직 나만의 성장 규칙이 없네요. 리포트 분석을 통해 첫 번째 규칙을 만들어 보세요.</p>` : systems.map(system => `<div class="system-card" data-id="${system.id}"><div class="system-card__header"><h3 class="system-card__title">${system.title}</h3><span class="system-card__tag">${system.targetFriction}</span></div><p class="system-card__description">${system.description}</p><div class="system-card__footer"><span>추가한 날짜: ${system.adoptedAt.toLocaleDateString()}</span><button class="button button--danger" data-action="delete-system">삭제</button></div></div>`).join('');
     };
 
     const updateActivePreset = (condition) => {
@@ -399,17 +399,17 @@ const Auth = (() => {
  * @description 뽀모도로 타이머 로직 및 상태 관리.
  */
 const Timer = (() => {
-    let state = { timerId: null, totalSeconds: 1500, remainingSeconds: 1500, mode: '집중', status: 'idle', logTriggered: false };
+    let state = { timerId: null, totalSeconds: 1500, remainingSeconds: 1500, mode: '집중 시간', status: 'idle', logTriggered: false };
     let config = { focusDuration: 25, restDuration: 5, condition: '보통' };
     let settings = { enhancedRest: false, alarmSound: 'alarm_clock.ogg', restSound: 'none' };
     let alarmAudio, restAudio;
-    const positiveMessages = ["최고의 몰입을 경험할 시간입니다.", "작은 집중이 큰 성장을 만듭니다.", "가장 중요한 일에 에너지를 쏟으세요.", "지금 이 순간의 몰입이 내일의 당신을 만듭니다."];
-    const restSuggestions = { short: "가볍게 눈을 감고 1분간 명상해보세요.", long: "자리에서 일어나 간단한 스트레칭은 어떠세요?" };
+    const positiveMessages = ["최고의 몰입을 경험할 시간이에요.", "작은 집중이 모여 큰 성장을 만들어요.", "가장 중요한 일에 에너지를 쏟아보세요.", "지금 이 순간의 몰입이 내일의 당신을 만들어요."];
+    const restSuggestions = { short: "가볍게 눈을 감고 1분간 명상해 보세요.", long: "자리에서 일어나 간단한 스트레칭은 어떠세요?" };
 
     const tick = () => {
         state.remainingSeconds--;
         UI.updateTimerDisplay(formatTime(state.remainingSeconds), state.mode, state.remainingSeconds, state.totalSeconds);
-        if (state.mode === '집중' && !state.logTriggered && state.remainingSeconds <= state.totalSeconds * 0.8) {
+        if (state.mode === '집중 시간' && !state.logTriggered && state.remainingSeconds <= state.totalSeconds * 0.8) {
             state.logTriggered = true;
             Logger.triggerLogPopup();
         }
@@ -423,23 +423,23 @@ const Timer = (() => {
         // alarmAudio?.play();
         Favicon.set('default');
 
-        if (state.mode === '집중') {
+        if (state.mode === '집중 시간') {
             Gamification.updateFocusSession(config.focusDuration);
-            state.mode = '휴식';
+            state.mode = '휴식 시간';
             state.totalSeconds = config.restDuration * 60;
             const suggestion = config.restDuration >= 10 ? restSuggestions.long : restSuggestions.short;
-            UI.showSessionTransitionModal({ icon: '☕', title: '수고하셨어요! 잠시 숨을 고르세요', message: `${config.restDuration}분간 재충전 시간입니다.`, buttonText: '휴식 시작', buttonClass: 'button--secondary' });
-            Notifications.show('수고하셨어요!', { body: `이제 ${config.restDuration}분간 휴식하며 재충전하세요.` });
+            UI.showSessionTransitionModal({ icon: '☕', title: '정말 고생 많으셨어요! 잠시 쉬어갈 시간이에요', message: `${config.restDuration}분간 재충전하며 다음 집중을 준비해 보세요.`, buttonText: '휴식하기', buttonClass: 'button--secondary' });
+            Notifications.show('고생하셨어요!', { body: `${config.restDuration}분간 휴식하며 다음 집중을 준비하세요.` });
             if (settings.enhancedRest) {
                  UI.showRestSuggestion(true, suggestion);
                  // 404 오류 방지 주석 해제: 실제 파일 경로와 일치하는 경우 주석을 풀어야 합니다.
                  // if (settings.restSound !== 'none') { restAudio?.play(); }
             }
         } else {
-            state.mode = '집중';
+            state.mode = '집중 시간';
             state.totalSeconds = config.focusDuration * 60;
-            UI.showSessionTransitionModal({ icon: '🔥', title: '다시, 집중할 시간이에요!', message: `${config.focusDuration}분간 몰입을 시작합니다.`, buttonText: '집중 시작', buttonClass: 'button--success' });
-            Notifications.show('다시 집중할 시간', { body: `이제 ${config.focusDuration}분간 다시 몰입해보세요.` });
+            UI.showSessionTransitionModal({ icon: '🔥', title: '다시 집중할 시간이에요!', message: `${config.focusDuration}분간 다시 한번 몰입해 보세요.`, buttonText: '집중하기', buttonClass: 'button--success' });
+            Notifications.show('다시 집중할 시간이에요', { body: `이제 ${config.focusDuration}분간 다시 한번 몰입해 보세요.` });
             if (settings.enhancedRest) {
                 UI.showRestSuggestion(false);
                 // 404 오류 방지 주석 해제
@@ -462,11 +462,11 @@ const Timer = (() => {
 
     const start = () => {
         if (state.status === 'running') return;
-        const isNewFocus = state.mode === '집중' && state.remainingSeconds === state.totalSeconds;
+        const isNewFocus = state.mode === '집중 시간' && state.remainingSeconds === state.totalSeconds;
         if (isNewFocus) UI.showPositivePriming(positiveMessages[Math.floor(Math.random() * positiveMessages.length)]);
         setTimeout(() => {
             state.status = 'running';
-            Favicon.set(state.mode === '집중' ? 'focus' : 'rest');
+            Favicon.set(state.mode === '집중 시간' ? 'focus' : 'rest');
             state.timerId = setInterval(tick, 1000);
             UI.updateTimerControls(state.status);
         }, isNewFocus ? 1600 : 0);
@@ -506,7 +506,7 @@ const Timer = (() => {
         start, pause, reset, startNextSession, applySettings,
         setConfig: (focus, rest, condition) => {
             config = { focusDuration: focus, restDuration: rest, condition };
-            state.mode = '집중';
+            state.mode = '집중 시간';
             state.totalSeconds = config.focusDuration * 60;
             reset();
             UI.updateActivePreset(condition);
@@ -545,7 +545,7 @@ const Logger = (() => {
             UI.resetLogForm();
             UI.toggleModal('log-modal', false);
             Timer.start();
-        } catch (error) { console.error("기록 저장 중 오류:", error); alert("기록 저장 중 오류가 발생했어요. 잠시 후 다시 시도해주세요."); }
+        } catch (error) { console.error("기록 저장 중 오류:", error); alert("기록 저장 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요."); }
     };
     return { triggerLogPopup, handleLogSubmit, handleDistractionInput };
 })();
@@ -561,7 +561,7 @@ const Report = (() => {
         const totalFocusMinutes = logs.reduce((sum, log) => sum + log.sessionDuration, 0);
         const frictionCounts = logs.flatMap(log => log.frictionTags).reduce((acc, tag) => ({ ...acc, [tag]: (acc[tag] || 0) + 1 }), {});
         const topFrictions = Object.entries(frictionCounts).sort(([, a], [, b]) => b - a).slice(0, 3).map(([tag, count]) => ({ tag, count }));
-        const energy = logs.reduce((sum, log) => sum + (log.sessionDuration >= 50 ? 2.5 : log.sessionDuration >= 30 ? 1.5 : 1.0), 0);
+        const energy = logs.length;
         return { totalFocusMinutes, energy, topFrictions, topFrictionTag: topFrictions[0]?.tag || null, frictionCounts };
     };
     const generateDailyReport = async () => {
@@ -570,7 +570,7 @@ const Report = (() => {
         try {
             const today = new Date();
             const logs = await FirebaseAPI.getLogsByDateRange(user.uid, new Date(today.setHours(0, 0, 0, 0)), new Date(today.setHours(23, 59, 59, 999)));
-            if (logs.length === 0) return alert("오늘의 집중 기록이 없어요. 성장을 위해 타이머를 시작해보세요.");
+            if (logs.length === 0) return alert("오늘의 집중 기록이 없네요. 첫 집중을 시작해 볼까요?");
             const analysis = analyzeLogs(logs);
             const insight = generateInsight(analysis.frictionCounts);
             const earnedBadges = await Gamification.checkBadges(logs);
@@ -580,18 +580,18 @@ const Report = (() => {
         } catch (error) { console.error("리포트 생성 중 오류:", error); }
     };
     const generateInsight = (counts) => {
-        if (counts['업무 외 검색'] >= 2) return "성장 인사이트: [업무 외 검색]으로 몰입이 자주 끊기는 경향이 있어요.";
-        if (counts['메신저 확인'] >= 3) return "성장 인사이트: [메신저 확인] 마찰이 잦군요. 집중 시간에는 알림을 잠시 꺼두는 건 어떠세요?";
-        if (counts['불필요한 생각'] >= 2) return "성장 인사이트: [불필요한 생각]이 몰입을 방해하고 있어요. 집중 시작 전, 생각을 비워내는 '브레인 덤프'가 도움이 될 거예요.";
-        return "특별한 패턴 없이 꾸준하게 집중하고 계시는군요. 멋져요!";
+        if (counts['업무 외 검색'] >= 2) return "[업무 외 검색]으로 몰입이 자주 끊어지는 경향을 발견했어요.";
+        if (counts['메신저 확인'] >= 3) return "[메신저 확인]이 잦은 편이네요. 집중할 땐 잠시 알림을 꺼두는 건 어떠세요?";
+        if (counts['불필요한 생각'] >= 2) return "[불필요한 생각]이 몰입을 방해하고 있군요. 집중 전에 '브레인 덤프'로 생각을 비워내면 도움이 될 거예요.";
+        return "특별한 방해 없이 꾸준히 집중하고 계시네요. 정말 멋져요!";
     };
     const getSystemSuggestion = (tag) => {
         const suggestions = {
-            '업무 외 검색': { title: "사이트 집중 모드", description: "추천 시스템: 집중 시간에는 허용된 사이트 외의 접속을 막아주는 '사이트 차단 확장 프로그램'을 활용해보세요. 의도치 않은 시간 낭비를 막을 수 있습니다." },
-            '불필요한 생각': { title: "브레인 덤프", description: "추천 시스템: 집중을 시작하기 전 2분 동안, 머릿속에 떠오르는 모든 생각을 글로 적어내보세요. 뇌를 비우고 현재 과제에 완전히 몰입하는 데 도움이 될 거예요." },
-            '메신저 확인': { title: "메시지 확인 타임블록", description: "추천 시스템: 집중 시간에는 메신저를 완전히 종료하고, 휴식 시간에만 확인하는 규칙을 만들어보세요. 소통과 집중의 균형을 찾을 수 있습니다." }
+            '업무 외 검색': { title: "사이트 집중 모드", description: "추천 규칙: 집중 시간에는 꼭 필요한 사이트만 열어두는 '집중 모드'를 활용해 보세요. 의도치 않은 시간 낭비를 막을 수 있어요." },
+            '불필요한 생각': { title: "브레인 덤프", description: "추천 규칙: 집중 시작 전 2분간 머릿속 생각을 모두 적어내는 '브레인 덤프'를 시작해 보세요. 생각을 비우고 현재 과제에 몰입하는 데 도움이 될 거예요." },
+            '메신저 확인': { title: "메시지 확인 타임블록", description: "추천 규칙: 집중 시간에는 메신저를 잠시 꺼두고, 휴식 시간에만 확인하는 규칙을 만들어 보세요. 소통과 집중의 균형을 찾을 수 있을 거예요." }
         };
-        return { ...(suggestions[tag] || { title: "나만의 시스템 만들기", description: `[${tag}] 마찰을 해결하기 위한 자신만의 시스템을 구축해보세요. 예를 들어, [주변 소음]이 문제라면 '노이즈 캔슬링 헤드폰 사용'을 시스템으로 만들 수 있어요.` }), targetFriction: tag };
+        return { ...(suggestions[tag] || { title: "나만의 규칙 만들기", description: `[${tag}] 문제를 해결하기 위한 자신만의 규칙을 만들어보세요. 예를 들어, [주변 소음]이 문제라면 '노이즈 캔슬링 헤드폰 사용하기' 같은 규칙을 만들 수 있어요.` }), targetFriction: tag };
     };
     return { generateDailyReport, getSystemSuggestion, getCurrentReportData: () => currentReportData };
 })();
@@ -612,7 +612,7 @@ const Stats = (() => {
         if (!user) return;
         const dom = UI.getStatsDOM();
         if (!dom.content) return;
-        dom.content.innerHTML = '<p>데이터를 불러오는 중입니다...</p>';
+        dom.content.innerHTML = '<p>통계 데이터를 불러오는 중입니다...</p>';
 
         try {
             const days = parseInt(dom.periodSelect.value, 10);
@@ -623,7 +623,7 @@ const Stats = (() => {
             const logs = await FirebaseAPI.getLogsByDateRange(user.uid, startDate, endDate);
 
             if (logs.length === 0) {
-                dom.content.innerHTML = '<p>선택된 기간의 데이터가 없습니다.</p>';
+                dom.content.innerHTML = '<p>선택하신 기간의 데이터가 없습니다.</p>';
                 return;
             }
 
@@ -632,9 +632,9 @@ const Stats = (() => {
 
             dom.content.innerHTML = `
                 <div class="report__stat">
-                    <p class="report__title">가장 잦았던 마찰 Top 3</p>
+                    <p class="report__title">가장 자주 나타난 방해 요인 Top 3</p>
                     <ul class="report__list">
-                        ${sortedFrictions.slice(0, 3).map(([tag, count]) => `<li>${tag} (${count}회)</li>`).join('') || '<li>기록된 마찰이 없습니다.</li>'}
+                        ${sortedFrictions.slice(0, 3).map(([tag, count]) => `<li>${tag} (${count}회)</li>`).join('') || '<li>기록된 방해 요인이 없습니다.</li>'}
                     </ul>
                 </div>
                 <div><canvas id="frictionChart"></canvas></div>
@@ -648,7 +648,7 @@ const Stats = (() => {
                 data: {
                     labels: sortedFrictions.map(([tag]) => tag),
                     datasets: [{
-                        label: '마찰 횟수',
+                        label: '방해 요인 횟수',
                         data: sortedFrictions.map(([, count]) => count),
                         backgroundColor: 'rgba(59, 91, 219, 0.7)',
                         borderColor: 'rgba(59, 91, 219, 1)',
@@ -666,8 +666,8 @@ const Stats = (() => {
         }
     };
     const generateInsight = (topFriction) => {
-        if (!topFriction) return "마찰 데이터가 충분히 쌓이면 더 깊이있는 분석을 제공해드릴게요.";
-        return `가장 큰 마찰은 [${topFriction}]이었습니다. 이 마찰을 해결할 '나의 시스템'을 만들어보는 건 어떨까요?`;
+        if (!topFriction) return "데이터가 충분히 쌓이면 더 깊이 있는 분석을 제공해 드릴게요.";
+        return `가장 큰 방해 요인은 [${topFriction}]이었네요. 이 문제를 해결할 나만의 규칙을 만들어보는 건 어떨까요?`;
     };
     return { show, handlePeriodChange };
 })();
@@ -694,7 +694,7 @@ const Systems = (() => {
         try {
             await FirebaseAPI.addSystem(user.uid, { ...suggestion, adoptedAt: serverTimestamp() });
             UI.toggleModal('system-suggestion-modal', false);
-            alert(`[${suggestion.title}] 시스템이 나의 성장 시스템에 추가되었어요.`);
+            alert(`'${suggestion.title}' 규칙이 추가되었어요.`);
         } catch (error) { console.error("시스템 추가 중 오류:", error); }
     };
     const handleSystemListClick = async (e) => {
@@ -702,7 +702,7 @@ const Systems = (() => {
         const user = Auth.getCurrentUser();
         const card = e.target.closest('.system-card');
         if (!user || !card) return;
-        if (confirm("이 시스템을 정말 삭제할까요? 이 결정은 되돌릴 수 없어요.")) {
+        if (confirm("이 규칙을 정말 삭제할까요? 삭제한 규칙은 되돌릴 수 없어요.")) {
             try { await FirebaseAPI.deleteSystem(user.uid, card.dataset.id); card.remove(); }
             catch (error) { console.error("시스템 삭제 중 오류:", error); }
         }
@@ -717,7 +717,7 @@ const Systems = (() => {
  */
 const Gamification = (() => {
     let profile = { level: 1, totalFocusMinutes: 0, streak: 0, lastSessionDate: null, badges: [], dailyGoals: {} };
-    let dailyProgress = { energy: 0, sessions: 0, goal: 8, goalSet: false };
+    let dailyProgress = { sessions: 0, goal: 8, goalSet: false };
     const getTodayString = () => new Date().toISOString().split('T')[0];
 
     const loadProfile = async () => {
@@ -733,46 +733,44 @@ const Gamification = (() => {
     const loadDailyProgress = () => {
         const todayStr = getTodayString();
         const goalData = profile.dailyGoals?.[todayStr];
-        dailyProgress = goalData ? { ...goalData } : { energy: 0, sessions: 0, goal: profile.dailyGoals?.defaultGoal || 8, goalSet: false };
+        dailyProgress = goalData ? { ...goalData } : { sessions: 0, goal: profile.dailyGoals?.defaultGoal || 8, goalSet: false };
         UI.updateForestDisplay(dailyProgress.sessions, dailyProgress.goal);
-        UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
+        UI.updateGoalProgress(dailyProgress.sessions, dailyProgress.goal);
         UI.lockGoalSetting(dailyProgress.goalSet);
     };
     const setDailyGoal = async () => {
         if (dailyProgress.goalSet) return alert("오늘의 목표는 이미 설정되었어요.");
         const goal = UI.getDailyGoal();
-        if (!goal || isNaN(goal) || goal <= 0) return alert("달성 가능한 목표를 설정해주세요.");
+        if (!goal || isNaN(goal) || goal <= 0) return alert("달성 가능한 목표를 설정해 주세요.");
 
         dailyProgress.goal = goal;
         dailyProgress.goalSet = true;
         profile.dailyGoals.defaultGoal = goal; // 다음 날을 위한 기본값 저장
 
         UI.updateForestDisplay(dailyProgress.sessions, dailyProgress.goal);
-        UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
+        UI.updateGoalProgress(dailyProgress.sessions, dailyProgress.goal);
         UI.lockGoalSetting(true);
 
         await saveDailyProgress();
-        alert(`오늘의 성장 목표가 ${goal} 세트로 설정되었어요. 응원할게요!`);
+        alert(`오늘의 목표가 ${goal}세트로 설정되었어요. 응원할게요!`);
     };
     const updateFocusSession = (duration) => {
-        const energy = duration >= 50 ? 2.5 : duration >= 30 ? 1.5 : 1.0;
-        dailyProgress.energy += energy;
         dailyProgress.sessions += 1;
 
         UI.updateForestDisplay(dailyProgress.sessions, dailyProgress.goal);
-        UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
+        UI.updateGoalProgress(dailyProgress.sessions, dailyProgress.goal);
 
         if (dailyProgress.goal > 0 && dailyProgress.sessions >= dailyProgress.goal && dailyProgress.sessions - 1 < dailyProgress.goal) {
-            alert("🎉 목표 달성! 꾸준함이 당신을 성장시킵니다. 정말 대단해요!");
-            Notifications.show('목표 달성!', { body: '오늘의 성장 목표를 완수했어요! 축하합니다.' });
+            alert("🎉 목표 달성! 꾸준함이 성장을 만들어요. 정말 대단해요!");
+            Notifications.show('목표 달성!', { body: '오늘의 목표를 모두 완료했어요! 축하합니다.' });
         }
 
         profile.totalFocusMinutes += duration;
         const newLevel = Math.floor(profile.totalFocusMinutes / 60) + 1;
         if (newLevel > profile.level) {
             profile.level = newLevel;
-            alert(`✨ 레벨업! 성장 레벨 ${newLevel}을 달성했어요!`);
-            Notifications.show('레벨업!', { body: `성장 레벨 ${newLevel} 달성을 축하합니다!` });
+            alert(`✨ 레벨업! ${newLevel} 레벨을 달성했어요!`);
+            Notifications.show('레벨업!', { body: `${newLevel} 레벨 달성을 축하합니다!` });
         }
         saveProfile();
         saveDailyProgress();
@@ -792,7 +790,7 @@ const Gamification = (() => {
         const earned = [];
         const frictionCounts = logs.flatMap(log => log.frictionTags).reduce((acc, tag) => ({ ...acc, [tag]: (acc[tag] || 0) + 1 }), {});
         const badgeConditions = {
-            'friction-slayer': { name: '마찰 해결사', condition: () => Object.keys(frictionCounts).length > 0 && logs.length >= 5 },
+            'friction-slayer': { name: '방해 요인 해결사', condition: () => Object.keys(frictionCounts).length > 0 && logs.length >= 5 },
             'deep-diver': { name: '몰입의 대가', condition: () => logs.some(log => log.sessionDuration >= 50) }
         };
         for (const [id, badge] of Object.entries(badgeConditions)) {
