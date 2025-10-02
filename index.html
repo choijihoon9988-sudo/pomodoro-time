@@ -73,11 +73,14 @@
                         <div class="timer-display">
                             <p id="timer-mode" class="timer-display__mode">집중</p>
                             <p id="timer-clock" class="timer-display__time">25:00</p>
+                            <div id="rest-suggestion-container" class="hidden">
+                                <p id="rest-suggestion-text"></p>
+                            </div>
                         </div>
                     </div>
                     <div class="timer-controls">
-                        <button id="start-btn" class="button button--primary button--large">시작</button>
-                        <button id="pause-btn" class="button button--secondary button--large">일시정지</button>
+                        <button id="start-btn" class="button button--primary button--large">집중 시작</button>
+                        <button id="pause-btn" class="button button--secondary button--large hidden">일시정지</button>
                         <button id="reset-btn" class="button">리셋</button>
                     </div>
                 </div>
@@ -86,16 +89,16 @@
                     <div class="widget">
                         <div class="widget__header">
                             <h3 class="widget__title">오늘의 성장 목표</h3>
-                            <div class="daily-goal">
+                            <div id="daily-goal-container" class="daily-goal">
                                 <input type="number" id="daily-goal-input" min="1" value="8">
                                 <span>에너지</span>
                                 <button id="set-goal-btn" class="button button--small">설정</button>
                             </div>
                         </div>
-                        <p class="widget__value"><span id="current-energy">0</span> / <span id="total-goal">8</span></p>
+                        <p class="widget__value"><span id="current-energy">0</span> / <span id="total-goal">8</span> 에너지</p>
                     </div>
                     <div class="widget">
-                        <h3 class="widget__title">나의 성장 나무</h3>
+                        <h3 class="widget__title">오늘의 집중 현황</h3>
                         <div id="forest-display" class="widget__content"></div>
                     </div>
                 </div>
@@ -115,14 +118,24 @@
                             <button class="button button--preset active" data-condition="보통" data-focus="25" data-rest="5">보통 컨디션</button>
                             <button class="button button--preset" data-condition="나쁨" data-focus="25" data-rest="10">나쁜 컨디션</button>
                         </div>
+                        <div class="settings__divider"></div>
+                        <h4>휴식 관리</h4>
                         <div class="settings__sound">
                             <label for="alarm-sound-select">알람 선택</label>
                             <select id="alarm-sound-select"></select>
                         </div>
+                        <div class="settings__toggle">
+                            <label for="enhanced-rest-toggle">휴식 제안 기능</label>
+                            <input type="checkbox" id="enhanced-rest-toggle" class="toggle-switch">
+                        </div>
+                         <div id="sound-therapy-container" class="settings__sound hidden">
+                            <label for="rest-sound-select">휴식 사운드</label>
+                            <select id="rest-sound-select"></select>
+                        </div>
                     </div>
                 </details>
                 <div class="main-actions">
-                    <button id="weekly-report-btn" class="button button--secondary">주간 리포트</button>
+                    <button id="stats-btn" class="button button--secondary">마찰 통계</button>
                     <button id="my-systems-btn" class="button button--secondary">나의 시스템</button>
                     <button id="end-day-btn" class="button button--primary">오늘 하루 분석하기</button>
                 </div>
@@ -154,7 +167,7 @@
                         <input type="text" id="distraction-input" placeholder="예: 저녁 장보기">
                         <ul id="distraction-list"></ul>
                     </div>
-                    <button type="submit" class="button button--primary button--full">기록하고 휴식하기</button>
+                    <button type="submit" class="button button--primary button--full">기록하고 계속하기</button>
                 </form>
             </div>
         </div>
@@ -166,6 +179,21 @@
                 <h2 id="report-modal-title">오늘 하루 성장 리포트</h2>
                 <div id="report-content" class="text-left"></div>
                 <button id="show-system-btn" class="button button--primary hidden button--full">마찰 해결 시스템 만들기</button>
+            </div>
+        </div>
+        
+        <div id="stats-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="stats-modal-title">
+            <div class="modal__overlay" data-close-modal></div>
+            <div class="modal__content text-left">
+                <button class="modal__close-btn" aria-label="Close dialog" data-close-modal>&times;</button>
+                <div class="stats-header">
+                    <h2 id="stats-modal-title">마찰 통계 대시보드</h2>
+                    <select id="stats-period-select">
+                        <option value="7">최근 7일</option>
+                        <option value="30">최근 30일</option>
+                    </select>
+                </div>
+                <div id="stats-content"></div>
             </div>
         </div>
 
@@ -195,6 +223,18 @@
                 <h2 id="transition-title">수고하셨어요! 잠시 숨을 고르세요</h2>
                 <p id="transition-message" class="modal__message">5분간 휴식을 시작합니다.</p>
                 <button id="transition-action-btn" class="button button--secondary">휴식 시작</button>
+            </div>
+        </div>
+        
+        <div id="reset-confirm-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="reset-confirm-title">
+            <div class="modal__overlay" data-close-modal></div>
+            <div class="modal__content">
+                <h2 id="reset-confirm-title">정말 초기화할까요?</h2>
+                <p>진행 중인 세션을 초기화합니다. 기록되지 않은 집중 시간은 저장되지 않아요.</p>
+                <div class="modal__actions">
+                    <button id="cancel-reset-btn" class="button button--secondary" data-close-modal>취소</button>
+                    <button id="confirm-reset-btn" class="button button--danger">초기화</button>
+                </div>
             </div>
         </div>
     </div>

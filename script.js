@@ -27,6 +27,7 @@ import {
     serverTimestamp,
     writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { Chart } from 'https://cdn.jsdelivr.net/npm/chart.js/dist/chart.js';
 
 
 // ===================================================================================
@@ -76,13 +77,17 @@ const FirebaseAPI = (() => {
             lastSessionDate: null, createdAt: serverTimestamp(), badges: [], dailyGoals: {}
         });
         const settingsRef = doc(db, 'users', userId, 'settings', 'default');
-        batch.set(settingsRef, { alarmSound: 'alarm_clock.ogg' });
+        batch.set(settingsRef, { 
+            alarmSound: 'alarm_clock.ogg',
+            enhancedRest: false,
+            restSound: 'none'
+        });
         return batch.commit();
     };
     const updateUserProfile = (userId, data) => setDoc(doc(db, 'users', userId), data, { merge: true });
     const getUserSettings = (userId) => getDoc(doc(db, 'users', userId, 'settings', 'default'));
     const updateUserSettings = (userId, data) => setDoc(doc(db, 'users', userId, 'settings', 'default'), data, { merge: true });
-    const saveLog = (userId, logData) => addDoc(collection(db, 'users', userId, 'logs'), logData);
+    const saveLog = (userId, logData) => addDoc(collection(db, 'users', userId, 'logs'), { ...logData, timestamp: serverTimestamp() });
     const getLogsByDateRange = async (userId, startDate, endDate) => {
         const q = query(collection(db, 'users', userId, 'logs'),
             where('timestamp', '>=', startDate), where('timestamp', '<=', endDate), orderBy('timestamp', 'asc'));
@@ -147,19 +152,23 @@ const UI = (() => {
     const frictionTags = ['업무 외 검색', '메신저 확인', '유튜브 시청', '불필요한 생각', '계획 부재', '기술적 문제', '주변 소음'];
     const emotionTags = ['불안감', '지루함', '호기심', '무력감', '피로감'];
     const alarmSounds = { 'alarm_clock.ogg': '클래식 알람', 'bell.ogg': '부드러운 벨', 'digital_alarm.ogg': '디지털 알람' };
+    const restSounds = { 'none': '없음', 'rain.mp3': '빗소리', 'forest.mp3': '숲속 소리' };
     const CIRCLE_CIRCUMFERENCE = 339.29; // 2 * PI * 54
 
     const cacheDOM = () => {
         const ids = [
             'auth-view', 'login-form', 'signup-form', 'app-view', 'logout-btn', 'user-email',
             'streak-count', 'user-level', 'start-btn', 'pause-btn', 'reset-btn', 'end-day-btn',
-            'my-systems-btn', 'log-modal', 'log-form', 'log-activity', 'friction-tags', 'emotion-tags',
+            'my-systems-btn', 'stats-btn', 'log-modal', 'log-form', 'log-activity', 'friction-tags', 'emotion-tags',
             'distraction-input', 'distraction-list', 'report-modal', 'report-content', 'show-system-btn',
             'system-suggestion-modal', 'system-suggestion-text', 'adopt-system-btn', 'my-systems-modal',
-            'my-systems-list', 'daily-goal-input', 'set-goal-btn', 'forest-display',
-            'alarm-sound-select', 'session-transition-modal', 'transition-icon', 'transition-title',
+            'my-systems-list', 'daily-goal-input', 'set-goal-btn', 'daily-goal-container', 'forest-display',
+            'alarm-sound-select', 'rest-sound-select', 'enhanced-rest-toggle', 'sound-therapy-container', 
+            'session-transition-modal', 'transition-icon', 'transition-title',
             'transition-message', 'transition-action-btn', 'positive-priming', 'positive-priming-text',
-            'weekly-report-btn', 'timer-mode', 'timer-clock', 'current-energy', 'total-goal'
+            'timer-mode', 'timer-clock', 'current-energy', 'total-goal', 'rest-suggestion-container',
+            'rest-suggestion-text', 'reset-confirm-modal', 'cancel-reset-btn', 'confirm-reset-btn',
+            'stats-modal', 'stats-period-select', 'stats-content'
         ];
         ids.forEach(id => dom[id.replace(/-(\w)/g, (_, c) => c.toUpperCase())] = document.getElementById(id));
         
@@ -179,6 +188,7 @@ const UI = (() => {
 
     const renderSelectOptions = () => {
         if (dom.alarmSoundSelect) dom.alarmSoundSelect.innerHTML = Object.entries(alarmSounds).map(([file, name]) => `<option value="${file}">${name}</option>`).join('');
+        if (dom.restSoundSelect) dom.restSoundSelect.innerHTML = Object.entries(restSounds).map(([file, name]) => `<option value="${file}">${name}</option>`).join('');
     };
 
     const bindEventListeners = () => {
@@ -189,10 +199,13 @@ const UI = (() => {
         dom.showLoginBtn?.addEventListener('click', () => toggleAuthForm('login'));
         dom.startBtn?.addEventListener('click', Timer.start);
         dom.pauseBtn?.addEventListener('click', Timer.pause);
-        dom.resetBtn?.addEventListener('click', Timer.reset);
+        dom.resetBtn?.addEventListener('click', () => toggleModal('reset-confirm-modal', true));
+        dom.confirmResetBtn?.addEventListener('click', () => { Timer.reset(); toggleModal('reset-confirm-modal', false); });
         dom.presetBtns?.forEach(btn => btn.addEventListener('click', App.handlePresetSelect));
         dom.endDayBtn?.addEventListener('click', Report.generateDailyReport);
         dom.mySystemsBtn?.addEventListener('click', Systems.showMySystems);
+        dom.statsBtn?.addEventListener('click', Stats.show);
+        dom.statsPeriodSelect?.addEventListener('change', Stats.handlePeriodChange);
         dom.logForm?.addEventListener('submit', Logger.handleLogSubmit);
         dom.distractionInput?.addEventListener('keydown', Logger.handleDistractionInput);
         dom.showSystemBtn?.addEventListener('click', App.handleShowSystem);
@@ -209,9 +222,10 @@ const UI = (() => {
             }
         });
         dom.setGoalBtn?.addEventListener('click', Gamification.setDailyGoal);
-        dom.alarmSoundSelect?.addEventListener('change', App.handleSoundChange);
+        dom.alarmSoundSelect?.addEventListener('change', (e) => App.handleSoundChange('alarmSound', e.target.value));
+        dom.restSoundSelect?.addEventListener('change', (e) => App.handleSoundChange('restSound', e.target.value));
+        dom.enhancedRestToggle?.addEventListener('change', App.handleEnhancedRestToggle);
         dom.transitionActionBtn?.addEventListener('click', Timer.startNextSession);
-        dom.weeklyReportBtn?.addEventListener('click', Report.generateWeeklyReport);
     };
     
     const toggleAuthForm = (formToShow) => {
@@ -242,12 +256,18 @@ const UI = (() => {
         if (dom.timerClock) dom.timerClock.textContent = timeString;
         if (dom.timerMode) dom.timerMode.textContent = mode;
         document.title = `${timeString} - ${mode}`;
-
-        const percentage = total > 0 ? remaining / total : 0;
+        
+        const percentage = total > 0 ? (total - remaining) / total : 0;
         if(dom.timerProgressTime) {
             dom.timerProgressTime.style.strokeDashoffset = CIRCLE_CIRCUMFERENCE * (1 - percentage);
             dom.timerProgressTime.style.stroke = mode === '집중' ? 'var(--primary-color)' : 'var(--success-color)';
         }
+    };
+    
+    const showRestSuggestion = (show, text = '') => {
+        if (!dom.restSuggestionContainer || !dom.restSuggestionText) return;
+        dom.restSuggestionContainer.classList.toggle('hidden', !show);
+        dom.restSuggestionText.textContent = text;
     };
 
     const updateTimerControls = (state) => {
@@ -268,13 +288,16 @@ const UI = (() => {
             modal.classList.remove('modal--visible');
             lastFocusedElement?.focus();
         }
-        document.body.classList.toggle('body--modal-open', show);
+        document.body.classList.toggle('body--modal-open', !!document.querySelector('.modal--visible'));
     };
 
-    const updateForestDisplay = (sessions) => {
+    const updateForestDisplay = (completed, total) => {
         if (!dom.forestDisplay) return;
-        const energyMap = { 'short': '🍅', 'medium': '🌳', 'long': '🌲' };
-        dom.forestDisplay.innerHTML = sessions.map(s => `<span>${energyMap[s.type]}</span>`).join('') || '<span style="font-size: 1rem; color: var(--text-light-color);">집중하여 당신의 성장 나무를 키워보세요.</span>';
+        let html = '';
+        for (let i = 0; i < total; i++) {
+            html += `<span class="session-icon ${i < completed ? 'completed' : ''}" style="color: ${i < completed ? 'var(--primary-color)' : 'var(--border-color)'}">🍅</span>`;
+        }
+        dom.forestDisplay.innerHTML = html || '<span style="font-size: 0.9rem; color: var(--text-light-color);">목표를 설정하고 집중을 시작하세요.</span>';
     };
 
     const updateGoalProgress = (current, total) => {
@@ -282,7 +305,7 @@ const UI = (() => {
         dom.currentEnergy.textContent = current.toFixed(1);
         dom.totalGoal.textContent = total;
         if(dom.dailyGoalInput) dom.dailyGoalInput.value = total;
-
+        
         const percentage = total > 0 ? Math.min(current / total, 1) : 0;
         if (dom.timerProgressGoal) {
             dom.timerProgressGoal.style.strokeDashoffset = CIRCLE_CIRCUMFERENCE * (1 - percentage);
@@ -316,13 +339,12 @@ const UI = (() => {
         if (dom.distractionList) dom.distractionList.innerHTML = distractions.map(d => `<li>${d}</li>`).join('');
     };
 
-    const renderReport = (reportData, title = "오늘의 성장 리포트") => {
+    const renderReport = (reportData) => {
         if (!dom.reportContent) return;
         const { totalFocusMinutes, energy, topFrictions, insight, badges } = reportData;
         const topFrictionsHTML = topFrictions.length > 0 ? topFrictions.map(f => `<li>${f.tag} (${f.count}회)</li>`).join('') : '<li>오늘은 마찰 없이 순항하셨네요! 멋져요.</li>';
         const badgesHTML = badges?.length > 0 ? `<div class="report__stat"><p class="report__title">새로운 성장 배지</p><ul class="report__list">${badges.map(b => `<li>🏅 ${b.name}</li>`).join('')}</ul></div>` : '';
-        const reportModalContent = dom.reportModal.querySelector('.modal__content');
-        if (reportModalContent) reportModalContent.querySelector('h2').textContent = title;
+
         dom.reportContent.innerHTML = `<div class="report__grid"><div class="report__stat"><p class="report__title">총 몰입 시간</p><p class="report__value">${totalFocusMinutes}분</p></div><div class="report__stat"><p class="report__title">오늘 얻은 성장 에너지</p><p class="report__value">${energy.toFixed(1)}</p></div></div>${badgesHTML}<div class="report__stat"><p class="report__title">성장을 방해한 주요 마찰</p><ul class="report__list">${topFrictionsHTML}</ul></div>${insight ? `<div class="report__insight"><p>${insight}</p></div>` : ''}`;
         if (dom.showSystemBtn) dom.showSystemBtn.classList.toggle('hidden', !reportData.topFrictionTag);
         toggleModal('report-modal', true);
@@ -334,6 +356,16 @@ const UI = (() => {
         dom.adoptSystemBtn.dataset.suggestion = JSON.stringify(suggestion);
         toggleModal('system-suggestion-modal', true);
     };
+    
+    const lockGoalSetting = (locked) => {
+        if (!dom.dailyGoalInput || !dom.setGoalBtn) return;
+        dom.dailyGoalInput.disabled = locked;
+        dom.setGoalBtn.classList.toggle('hidden', locked);
+        if (locked) {
+            const container = dom.dailyGoalContainer;
+            if(container) container.title = "오늘의 목표는 하루에 한 번만 설정할 수 있어요.";
+        }
+    };
 
     const renderMySystems = (systems) => {
         if (!dom.mySystemsList) return;
@@ -341,9 +373,11 @@ const UI = (() => {
     };
 
     const updateActivePreset = (condition) => {
-        dom.presetBtns.forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.condition === condition);
-        });
+        dom.presetBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.condition === condition));
+    };
+    
+    const toggleEnhancedRestUI = (enabled) => {
+        if (dom.soundTherapyContainer) dom.soundTherapyContainer.classList.toggle('hidden', !enabled);
     };
 
     return {
@@ -351,14 +385,21 @@ const UI = (() => {
         showView, displayAuthError, updateUserEmail, updateGamificationStats, updateTimerDisplay,
         updateTimerControls, toggleModal, resetLogForm, renderDistractionList,
         renderReport, showSystemSuggestion, renderMySystems, updateForestDisplay, updateGoalProgress,
-        showSessionTransitionModal, showPositivePriming, updateActivePreset,
+        showSessionTransitionModal, showPositivePriming, updateActivePreset, showRestSuggestion,
+        lockGoalSetting, toggleEnhancedRestUI,
         getLogFormData: () => ({
             activity: dom.logActivity.value,
             frictionTags: Array.from(dom.frictionTags.querySelectorAll('.tag-group__tag--selected')).map(t => t.dataset.tag),
             emotionTags: Array.from(dom.emotionTags.querySelectorAll('.tag-group__tag--selected')).map(t => t.dataset.tag)
         }),
         getDailyGoal: () => parseInt(dom.dailyGoalInput.value, 10),
-        setAlarmSound: (soundFile) => { if (dom.alarmSoundSelect) dom.alarmSoundSelect.value = soundFile; }
+        getStatsDOM: () => ({ content: dom.statsContent, periodSelect: dom.statsPeriodSelect }),
+        setSettings: (settings) => {
+            if (dom.alarmSoundSelect) dom.alarmSoundSelect.value = settings.alarmSound;
+            if (dom.restSoundSelect) dom.restSoundSelect.value = settings.restSound;
+            if (dom.enhancedRestToggle) dom.enhancedRestToggle.checked = settings.enhancedRest;
+            toggleEnhancedRestUI(settings.enhancedRest);
+        }
     };
 })();
 
@@ -375,12 +416,14 @@ const Auth = (() => {
             if (user) {
                 const profileSnap = await FirebaseAPI.getUserProfile(user.uid);
                 if (!profileSnap.exists()) await FirebaseAPI.createUserProfile(user.uid, user.email);
+                
                 const settingsSnap = await FirebaseAPI.getUserSettings(user.uid);
                 if (settingsSnap.exists()) {
-                    const { alarmSound } = settingsSnap.data();
-                    Timer.setAlarmSound(alarmSound);
-                    UI.setAlarmSound(alarmSound);
+                    const settings = settingsSnap.data();
+                    Timer.applySettings(settings);
+                    UI.setSettings(settings);
                 }
+                
                 Gamification.loadProfile();
                 UI.showView('app');
                 UI.updateUserEmail(user.email);
@@ -405,13 +448,15 @@ const Auth = (() => {
 const Timer = (() => {
     let state = { timerId: null, totalSeconds: 1500, remainingSeconds: 1500, mode: '집중', status: 'idle', logTriggered: false };
     let config = { focusDuration: 25, restDuration: 5, condition: '보통' };
-    let alarm = new Audio('sounds/alarm_clock.ogg');
+    let settings = { enhancedRest: false, alarmSound: 'alarm_clock.ogg', restSound: 'none' };
+    let alarmAudio, restAudio;
     const positiveMessages = ["최고의 몰입을 경험할 시간입니다.", "작은 집중이 큰 성장을 만듭니다.", "가장 중요한 일에 에너지를 쏟으세요.", "지금 이 순간의 몰입이 내일의 당신을 만듭니다."];
+    const restSuggestions = { short: "가볍게 눈을 감고 1분간 명상해보세요.", long: "자리에서 일어나 간단한 스트레칭은 어떠세요?" };
 
     const tick = () => {
         state.remainingSeconds--;
         UI.updateTimerDisplay(formatTime(state.remainingSeconds), state.mode, state.remainingSeconds, state.totalSeconds);
-        if (state.mode === '집중' && !state.logTriggered && state.remainingSeconds <= state.totalSeconds * 0.2) {
+        if (state.mode === '집중' && !state.logTriggered && state.remainingSeconds <= state.totalSeconds * 0.8) {
             state.logTriggered = true;
             Logger.triggerLogPopup();
         }
@@ -421,22 +466,30 @@ const Timer = (() => {
     const completeSession = () => {
         clearInterval(state.timerId);
         state.status = 'idle';
-        alarm.play();
+        alarmAudio?.play();
         Favicon.set('default');
-        let transitionData;
+        
         if (state.mode === '집중') {
             Gamification.updateFocusSession(config.focusDuration);
             state.mode = '휴식';
             state.totalSeconds = config.restDuration * 60;
-            transitionData = { icon: '☕', title: '수고하셨어요! 잠시 숨을 고르세요', message: `${config.restDuration}분간 재충전 시간입니다.`, buttonText: '휴식 시작', buttonClass: 'button--secondary' };
+            const suggestion = config.restDuration >= 10 ? restSuggestions.long : restSuggestions.short;
+            UI.showSessionTransitionModal({ icon: '☕', title: '수고하셨어요! 잠시 숨을 고르세요', message: `${config.restDuration}분간 재충전 시간입니다.`, buttonText: '휴식 시작', buttonClass: 'button--secondary' });
             Notifications.show('수고하셨어요!', { body: `이제 ${config.restDuration}분간 휴식하며 재충전하세요.` });
+            if (settings.enhancedRest) {
+                 UI.showRestSuggestion(true, suggestion);
+                 if (settings.restSound !== 'none') { restAudio?.play(); }
+            }
         } else {
             state.mode = '집중';
             state.totalSeconds = config.focusDuration * 60;
-            transitionData = { icon: '🔥', title: '다시, 집중할 시간이에요!', message: `${config.focusDuration}분간 몰입을 시작합니다.`, buttonText: '집중 시작', buttonClass: 'button--success' };
+            UI.showSessionTransitionModal({ icon: '🔥', title: '다시, 집중할 시간이에요!', message: `${config.focusDuration}분간 몰입을 시작합니다.`, buttonText: '집중 시작', buttonClass: 'button--success' });
             Notifications.show('다시 집중할 시간', { body: `이제 ${config.focusDuration}분간 다시 몰입해보세요.` });
+            if (settings.enhancedRest) {
+                UI.showRestSuggestion(false);
+                restAudio?.pause();
+            }
         }
-        UI.showSessionTransitionModal(transitionData);
         UI.updateTimerControls(state.status);
     };
     
@@ -477,20 +530,31 @@ const Timer = (() => {
         Favicon.set('default');
         UI.updateTimerDisplay(formatTime(state.remainingSeconds), state.mode, state.remainingSeconds, state.totalSeconds);
         UI.updateTimerControls(state.status);
+        UI.showRestSuggestion(false);
+        restAudio?.pause();
     };
     
+    const applySettings = (newSettings) => {
+        settings = { ...settings, ...newSettings };
+        alarmAudio = new Audio(`sounds/${settings.alarmSound}`);
+        if (settings.restSound !== 'none') {
+            restAudio = new Audio(`sounds/${settings.restSound}`);
+            restAudio.loop = true;
+        } else {
+            restAudio = null;
+        }
+    };
+
     return {
-        start, pause, reset, startNextSession,
+        start, pause, reset, startNextSession, applySettings,
         setConfig: (focus, rest, condition) => {
             config = { focusDuration: focus, restDuration: rest, condition };
             state.mode = '집중';
             state.totalSeconds = config.focusDuration * 60;
-            Gamification.resetDailyProgress();
             reset();
             UI.updateActivePreset(condition);
         },
         getCurrentSessionDuration: () => config.focusDuration,
-        setAlarmSound: (soundFile) => { alarm = new Audio(`sounds/${soundFile}`); }
     };
 })();
 
@@ -519,7 +583,7 @@ const Logger = (() => {
         const { activity, frictionTags, emotionTags } = UI.getLogFormData();
         if (!activity) return alert("무엇에 집중하셨는지 알려주세요.");
         try {
-            await FirebaseAPI.saveLog(user.uid, { activity, frictionTags, emotionTags, distractions, sessionDuration: Timer.getCurrentSessionDuration(), timestamp: serverTimestamp() });
+            await FirebaseAPI.saveLog(user.uid, { activity, frictionTags, emotionTags, distractions, sessionDuration: Timer.getCurrentSessionDuration() });
             distractions = [];
             UI.resetLogForm();
             UI.toggleModal('log-modal', false);
@@ -532,7 +596,7 @@ const Logger = (() => {
 
 /**
  * @module Report
- * @description 데일리/위클리 리포트 생성 및 분석.
+ * @description 데일리 리포트 생성.
  */
 const Report = (() => {
     let currentReportData = null;
@@ -554,30 +618,15 @@ const Report = (() => {
             const insight = generateInsight(analysis.frictionCounts);
             const earnedBadges = await Gamification.checkBadges(logs);
             currentReportData = { ...analysis, insight, badges: earnedBadges };
-            UI.renderReport(currentReportData, "오늘의 성장 리포트");
+            UI.renderReport(currentReportData);
             await Gamification.updateStreak();
         } catch (error) { console.error("리포트 생성 중 오류:", error); }
-    };
-    const generateWeeklyReport = async () => {
-        const user = Auth.getCurrentUser();
-        if (!user) return;
-        try {
-            const endOfWeek = new Date(new Date().setHours(23, 59, 59, 999));
-            const startOfWeek = new Date(new Date().setDate(endOfWeek.getDate() - 6));
-            startOfWeek.setHours(0, 0, 0, 0);
-            const logs = await FirebaseAPI.getLogsByDateRange(user.uid, startOfWeek, endOfWeek);
-            if (logs.length === 0) return alert("지난 7일간의 집중 기록이 없어요.");
-            const analysis = analyzeLogs(logs);
-            const insight = `지난 7일간 성장을 가장 방해한 마찰은 [${analysis.topFrictionTag || '없음'}]이었어요.`;
-            currentReportData = { ...analysis, insight, badges: [] };
-            UI.renderReport(currentReportData, "주간 성장 리포트");
-        } catch (error) { console.error("주간 리포트 생성 중 오류:", error); }
     };
     const generateInsight = (counts) => {
         if (counts['업무 외 검색'] >= 2) return "성장 인사이트: [업무 외 검색]으로 몰입이 자주 끊기는 경향이 있어요.";
         if (counts['메신저 확인'] >= 3) return "성장 인사이트: [메신저 확인] 마찰이 잦군요. 집중 시간에는 알림을 잠시 꺼두는 건 어떠세요?";
         if (counts['불필요한 생각'] >= 2) return "성장 인사이트: [불필요한 생각]이 몰입을 방해하고 있어요. 집중 시작 전, 생각을 비워내는 '브레인 덤프'가 도움이 될 거예요.";
-        return null;
+        return "특별한 패턴 없이 꾸준하게 집중하고 계시는군요. 멋져요!";
     };
     const getSystemSuggestion = (tag) => {
         const suggestions = {
@@ -587,7 +636,83 @@ const Report = (() => {
         };
         return { ...(suggestions[tag] || { title: "나만의 시스템 만들기", description: `[${tag}] 마찰을 해결하기 위한 자신만의 시스템을 구축해보세요. 예를 들어, [주변 소음]이 문제라면 '노이즈 캔슬링 헤드폰 사용'을 시스템으로 만들 수 있어요.` }), targetFriction: tag };
     };
-    return { generateDailyReport, generateWeeklyReport, getSystemSuggestion, getCurrentReportData: () => currentReportData };
+    return { generateDailyReport, getSystemSuggestion, getCurrentReportData: () => currentReportData };
+})();
+
+/**
+ * @module Stats
+ * @description 마찰 통계 대시보드 관리.
+ */
+const Stats = (() => {
+    let chartInstance = null;
+    const show = async () => {
+        UI.toggleModal('stats-modal', true);
+        await render();
+    };
+    const handlePeriodChange = async () => await render();
+    const render = async () => {
+        const user = Auth.getCurrentUser();
+        if (!user) return;
+        const dom = UI.getStatsDOM();
+        if (!dom.content) return;
+        dom.content.innerHTML = '<p>데이터를 불러오는 중입니다...</p>';
+
+        try {
+            const days = parseInt(dom.periodSelect.value, 10);
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - days);
+            
+            const logs = await FirebaseAPI.getLogsByDateRange(user.uid, startDate, endDate);
+            
+            if (logs.length === 0) {
+                dom.content.innerHTML = '<p>선택된 기간의 데이터가 없습니다.</p>';
+                return;
+            }
+
+            const frictionCounts = logs.flatMap(log => log.frictionTags).reduce((acc, tag) => ({ ...acc, [tag]: (acc[tag] || 0) + 1 }), {});
+            const sortedFrictions = Object.entries(frictionCounts).sort(([,a],[,b]) => b - a);
+
+            dom.content.innerHTML = `
+                <div class="report__stat">
+                    <p class="report__title">가장 잦았던 마찰 Top 3</p>
+                    <ul class="report__list">
+                        ${sortedFrictions.slice(0, 3).map(([tag, count]) => `<li>${tag} (${count}회)</li>`).join('') || '<li>기록된 마찰이 없습니다.</li>'}
+                    </ul>
+                </div>
+                <div><canvas id="frictionChart"></canvas></div>
+                <p class="stats-insight">${generateInsight(sortedFrictions[0]?.[0])}</p>
+            `;
+
+            if (chartInstance) chartInstance.destroy();
+            const ctx = document.getElementById('frictionChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedFrictions.map(([tag]) => tag),
+                    datasets: [{
+                        label: '마찰 횟수',
+                        data: sortedFrictions.map(([, count]) => count),
+                        backgroundColor: 'rgba(59, 91, 219, 0.7)',
+                        borderColor: 'rgba(59, 91, 219, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        } catch (error) {
+            console.error("통계 렌더링 오류:", error);
+            dom.content.innerHTML = '<p>통계를 불러오는 중 오류가 발생했습니다.</p>';
+        }
+    };
+    const generateInsight = (topFriction) => {
+        if (!topFriction) return "마찰 데이터가 충분히 쌓이면 더 깊이있는 분석을 제공해드릴게요.";
+        return `가장 큰 마찰은 [${topFriction}]이었습니다. 이 마찰을 해결할 '나의 시스템'을 만들어보는 건 어떨까요?`;
+    };
+    return { show, handlePeriodChange };
 })();
 
 
@@ -635,7 +760,7 @@ const Systems = (() => {
  */
 const Gamification = (() => {
     let profile = { level: 1, totalFocusMinutes: 0, streak: 0, lastSessionDate: null, badges: [], dailyGoals: {} };
-    let dailyProgress = { energy: 0, sessions: [], goal: 8 };
+    let dailyProgress = { energy: 0, sessions: 0, goal: 8, goalSet: false };
     const getTodayString = () => new Date().toISOString().split('T')[0];
 
     const loadProfile = async () => {
@@ -651,34 +776,46 @@ const Gamification = (() => {
     const loadDailyProgress = () => {
         const todayStr = getTodayString();
         const goalData = profile.dailyGoals?.[todayStr];
-        dailyProgress = goalData ? { ...goalData } : { energy: 0, sessions: [], goal: profile.dailyGoals?.defaultGoal || 8 };
-        UI.updateForestDisplay(dailyProgress.sessions);
+        dailyProgress = goalData ? { ...goalData } : { energy: 0, sessions: 0, goal: profile.dailyGoals?.defaultGoal || 8, goalSet: false };
+        UI.updateForestDisplay(dailyProgress.sessions, dailyProgress.goal);
         UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
+        UI.lockGoalSetting(dailyProgress.goalSet);
     };
     const setDailyGoal = async () => {
+        if (dailyProgress.goalSet) return alert("오늘의 목표는 이미 설정되었어요.");
         const goal = UI.getDailyGoal();
         if (!goal || isNaN(goal) || goal <= 0) return alert("달성 가능한 목표를 설정해주세요.");
+        
         dailyProgress.goal = goal;
-        profile.dailyGoals.defaultGoal = goal;
+        dailyProgress.goalSet = true;
+        profile.dailyGoals.defaultGoal = goal; // 다음 날을 위한 기본값 저장
+        
+        UI.updateForestDisplay(dailyProgress.sessions, dailyProgress.goal);
         UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
+        UI.lockGoalSetting(true);
+        
         await saveDailyProgress();
-        alert(`오늘의 성장 목표가 ${goal} 에너지로 설정되었어요. 응원할게요!`);
+        alert(`오늘의 성장 목표가 ${goal} 세트로 설정되었어요. 응원할게요!`);
     };
     const updateFocusSession = (duration) => {
         const energy = duration >= 50 ? 2.5 : duration >= 30 ? 1.5 : 1.0;
-        const type = duration >= 50 ? 'long' : duration >= 30 ? 'medium' : 'short';
         dailyProgress.energy += energy;
-        dailyProgress.sessions.push({ type, duration });
-        UI.updateForestDisplay(dailyProgress.sessions);
+        dailyProgress.sessions += 1;
+        
+        UI.updateForestDisplay(dailyProgress.sessions, dailyProgress.goal);
         UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
-        if (dailyProgress.goal > 0 && dailyProgress.energy >= dailyProgress.goal && dailyProgress.energy - energy < dailyProgress.goal) {
+
+        if (dailyProgress.goal > 0 && dailyProgress.sessions >= dailyProgress.goal && dailyProgress.sessions - 1 < dailyProgress.goal) {
             alert("🎉 목표 달성! 꾸준함이 당신을 성장시킵니다. 정말 대단해요!");
+            Notifications.show('목표 달성!', { body: '오늘의 성장 목표를 완수했어요! 축하합니다.' });
         }
+        
         profile.totalFocusMinutes += duration;
         const newLevel = Math.floor(profile.totalFocusMinutes / 60) + 1;
         if (newLevel > profile.level) {
             profile.level = newLevel;
             alert(`✨ 레벨업! 성장 레벨 ${newLevel}을 달성했어요!`);
+            Notifications.show('레벨업!', { body: `성장 레벨 ${newLevel} 달성을 축하합니다!` });
         }
         saveProfile();
         saveDailyProgress();
@@ -702,8 +839,9 @@ const Gamification = (() => {
             'deep-diver': { name: '몰입의 대가', condition: () => logs.some(log => log.sessionDuration >= 50) }
         };
         for (const [id, badge] of Object.entries(badgeConditions)) {
-            if (!profile.badges.includes(id) && badge.condition()) {
+            if (!profile.badges?.includes(id) && badge.condition()) {
                 earned.push(badge);
+                if (!profile.badges) profile.badges = [];
                 profile.badges.push(id);
             }
         }
@@ -724,13 +862,8 @@ const Gamification = (() => {
         profile.dailyGoals[todayStr] = dailyProgress;
         await FirebaseAPI.updateUserProfile(user.uid, { dailyGoals: profile.dailyGoals });
     };
-    const resetDailyProgress = () => { 
-        dailyProgress = { energy: 0, sessions: [], goal: profile.dailyGoals?.defaultGoal || 8 };
-        UI.updateForestDisplay(dailyProgress.sessions);
-        UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
-    };
 
-    return { loadProfile, setDailyGoal, updateFocusSession, updateStreak, resetDailyProgress, checkBadges };
+    return { loadProfile, setDailyGoal, updateFocusSession, updateStreak, checkBadges };
 })();
 
 
@@ -771,11 +904,20 @@ const App = (() => {
         const reportData = Report.getCurrentReportData();
         if (reportData?.topFrictionTag) UI.showSystemSuggestion(Report.getSystemSuggestion(reportData.topFrictionTag));
     };
-    const handleSoundChange = async (e) => {
+    const handleSoundChange = async (type, value) => {
         const user = Auth.getCurrentUser();
         if (!user) return;
-        Timer.setAlarmSound(e.target.value);
-        await FirebaseAPI.updateUserSettings(user.uid, { alarmSound: e.target.value });
+        const settings = { [type]: value };
+        Timer.applySettings(settings);
+        await FirebaseAPI.updateUserSettings(user.uid, settings);
+    };
+    const handleEnhancedRestToggle = async (e) => {
+        const user = Auth.getCurrentUser();
+        if (!user) return;
+        const enabled = e.target.checked;
+        Timer.applySettings({ enhancedRest: enabled });
+        UI.toggleEnhancedRestUI(enabled);
+        await FirebaseAPI.updateUserSettings(user.uid, { enhancedRest: enabled });
     };
     const handleLogin = (e) => {
         e.preventDefault();
@@ -786,7 +928,7 @@ const App = (() => {
         Auth.handleSignUp(e.target.querySelector('#signup-email').value, e.target.querySelector('#signup-password').value);
     };
 
-    return { init, mapAuthCodeToMessage, handleLogin, handleSignup, handlePresetSelect, handleShowSystem, handleSoundChange };
+    return { init, mapAuthCodeToMessage, handleLogin, handleSignup, handlePresetSelect, handleShowSystem, handleSoundChange, handleEnhancedRestToggle };
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);
