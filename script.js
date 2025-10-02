@@ -21,8 +21,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 // ✅ 수정됨: Chart.js 및 생키 다이어그램 컨트롤러를 ES 모듈로 임포트
 import { Chart, registerables } from 'https://cdn.jsdelivr.net/npm/chart.js/dist/chart.mjs';
-// ✅ 수정됨: 404 오류를 해결하기 위해 올바른 CDN URL로 변경
-import { SankeyController, Flow } from 'https://cdn.jsdelivr.net/npm/chartjs-chart-sankey@0.12.1/dist/chart.mjs';
+// ✅ 수정됨: 404 오류를 해결하기 위해 올바른 CDN URL로 변경 (`chart.mjs` -> `chartjs-chart-sankey.mjs`)
+import { SankeyController, Flow } from 'https://cdn.jsdelivr.net/npm/chartjs-chart-sankey@0.12.1/dist/chartjs-chart-sankey.mjs';
 
 // Chart.js의 모든 기본 구성 요소와 생키 컨트롤러를 등록합니다.
 Chart.register(...registerables, SankeyController, Flow);
@@ -809,7 +809,7 @@ const Gamification = (() => {
         profile.dailyGoals.defaultGoal = goal;
 
         UI.updateForestDisplay(dailyProgress.energy, dailyProgress.goal);
-        UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
+        UI.updateGoalProgress(daily.energy, dailyProgress.goal);
         UI.lockGoalSetting(true);
 
         await saveDailyProgress();
@@ -933,4 +933,3 @@ const App = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);
-}
