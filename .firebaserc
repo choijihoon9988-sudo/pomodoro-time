@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "pomodoro-os"
-  }
+    "default": "friction-zero-os"
+  },
+  "targets": {},
+  "etags": {}
 }

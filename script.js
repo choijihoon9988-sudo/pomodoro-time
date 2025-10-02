@@ -35,15 +35,15 @@ Chart.register(...registerables);
 
 
 // ===================================================================================
-// Firebase 프로젝트 구성 정보
+// Firebase 프로젝트 구성 정보 (✅ 새 계정 정보로 업데이트됨)
 // ===================================================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyCRHNKmNBtTFbCeQhhGJsoxYwmqKu1f4uo",
-  authDomain: "pomodoro-os.firebaseapp.com",
-  projectId: "pomodoro-os",
-  storageBucket: "pomodoro-os.firebasestorage.app",
-  messagingSenderId: "338185932667",
-  appId: "1:338185932667:web:c5c9c46274db636d6777de"
+  apiKey: "AIzaSyCr_ntgN9h3nTO4kE2L915QKjgOXkL38vw",
+  authDomain: "friction-zero-os.firebaseapp.com",
+  projectId: "friction-zero-os",
+  storageBucket: "friction-zero-os.firebasestorage.app",
+  messagingSenderId: "819091253027",
+  appId: "1:819091253027:web:40561c250cec97e51cce96"
 };
 
 
@@ -55,7 +55,8 @@ const FirebaseAPI = (() => {
     let app, auth, db;
 
     const init = () => {
-        if (!firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("AIzaS")) {
+        // ✅ 수정됨: API 키 유효성 검사를 더 유연하게 변경
+        if (!firebaseConfig.apiKey || firebaseConfig.apiKey.length < 20) {
             console.error("Firebase 구성 정보가 유효하지 않습니다. script.js 파일의 firebaseConfig 객체를 확인해주세요.");
             alert("서비스 연결 설정이 올바르지 않습니다. 관리자에게 문의해주세요.");
             return false;
@@ -79,7 +80,7 @@ const FirebaseAPI = (() => {
             lastSessionDate: null, createdAt: serverTimestamp(), badges: [], dailyGoals: {}
         });
         const settingsRef = doc(db, 'users', userId, 'settings', 'default');
-        batch.set(settingsRef, { 
+        batch.set(settingsRef, {
             alarmSound: 'alarm_clock.ogg',
             enhancedRest: false,
             restSound: 'none'
@@ -165,7 +166,7 @@ const UI = (() => {
             'distraction-input', 'distraction-list', 'report-modal', 'report-content', 'show-system-btn',
             'system-suggestion-modal', 'system-suggestion-text', 'adopt-system-btn', 'my-systems-modal',
             'my-systems-list', 'daily-goal-input', 'set-goal-btn', 'daily-goal-container', 'forest-display',
-            'alarm-sound-select', 'rest-sound-select', 'enhanced-rest-toggle', 'sound-therapy-container', 
+            'alarm-sound-select', 'rest-sound-select', 'enhanced-rest-toggle', 'sound-therapy-container',
             'session-transition-modal', 'transition-icon', 'transition-title',
             'transition-message', 'transition-action-btn', 'positive-priming', 'positive-priming-text',
             'timer-mode', 'timer-clock', 'current-energy', 'total-goal', 'rest-suggestion-container',
@@ -173,7 +174,7 @@ const UI = (() => {
             'stats-modal', 'stats-period-select', 'stats-content'
         ];
         ids.forEach(id => dom[id.replace(/-(\w)/g, (_, c) => c.toUpperCase())] = document.getElementById(id));
-        
+
         dom.loginError = dom.loginForm?.querySelector('.auth-form__error');
         dom.signupError = dom.signupForm?.querySelector('.auth-form__error');
         dom.showSignupBtn = document.getElementById('show-signup');
@@ -229,7 +230,7 @@ const UI = (() => {
         dom.enhancedRestToggle?.addEventListener('change', App.handleEnhancedRestToggle);
         dom.transitionActionBtn?.addEventListener('click', Timer.startNextSession);
     };
-    
+
     const toggleAuthForm = (formToShow) => {
         dom.loginForm?.classList.toggle('hidden', formToShow === 'signup');
         dom.signupForm?.classList.toggle('hidden', formToShow === 'login');
@@ -258,14 +259,14 @@ const UI = (() => {
         if (dom.timerClock) dom.timerClock.textContent = timeString;
         if (dom.timerMode) dom.timerMode.textContent = mode;
         document.title = `${timeString} - ${mode}`;
-        
+
         const percentage = total > 0 ? (total - remaining) / total : 0;
         if(dom.timerProgressTime) {
             dom.timerProgressTime.style.strokeDashoffset = CIRCLE_CIRCUMFERENCE * (1 - percentage);
             dom.timerProgressTime.style.stroke = mode === '집중' ? 'var(--primary-color)' : 'var(--success-color)';
         }
     };
-    
+
     const showRestSuggestion = (show, text = '') => {
         if (!dom.restSuggestionContainer || !dom.restSuggestionText) return;
         dom.restSuggestionContainer.classList.toggle('hidden', !show);
@@ -307,7 +308,7 @@ const UI = (() => {
         dom.currentEnergy.textContent = current.toFixed(1);
         dom.totalGoal.textContent = total;
         if(dom.dailyGoalInput) dom.dailyGoalInput.value = total;
-        
+
         const percentage = total > 0 ? Math.min(current / total, 1) : 0;
         if (dom.timerProgressGoal) {
             dom.timerProgressGoal.style.strokeDashoffset = CIRCLE_CIRCUMFERENCE * (1 - percentage);
@@ -358,7 +359,7 @@ const UI = (() => {
         dom.adoptSystemBtn.dataset.suggestion = JSON.stringify(suggestion);
         toggleModal('system-suggestion-modal', true);
     };
-    
+
     const lockGoalSetting = (locked) => {
         if (!dom.dailyGoalInput || !dom.setGoalBtn) return;
         dom.dailyGoalInput.disabled = locked;
@@ -377,7 +378,7 @@ const UI = (() => {
     const updateActivePreset = (condition) => {
         dom.presetBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.condition === condition));
     };
-    
+
     const toggleEnhancedRestUI = (enabled) => {
         if (dom.soundTherapyContainer) dom.soundTherapyContainer.classList.toggle('hidden', !enabled);
     };
@@ -418,14 +419,14 @@ const Auth = (() => {
             if (user) {
                 const profileSnap = await FirebaseAPI.getUserProfile(user.uid);
                 if (!profileSnap.exists()) await FirebaseAPI.createUserProfile(user.uid, user.email);
-                
+
                 const settingsSnap = await FirebaseAPI.getUserSettings(user.uid);
                 if (settingsSnap.exists()) {
                     const settings = settingsSnap.data();
                     Timer.applySettings(settings);
                     UI.setSettings(settings);
                 }
-                
+
                 Gamification.loadProfile();
                 UI.showView('app');
                 UI.updateUserEmail(user.email);
@@ -464,13 +465,13 @@ const Timer = (() => {
         }
         if (state.remainingSeconds <= 0) completeSession();
     };
-    
+
     const completeSession = () => {
         clearInterval(state.timerId);
         state.status = 'idle';
         alarmAudio?.play();
         Favicon.set('default');
-        
+
         if (state.mode === '집중') {
             Gamification.updateFocusSession(config.focusDuration);
             state.mode = '휴식';
@@ -494,7 +495,7 @@ const Timer = (() => {
         }
         UI.updateTimerControls(state.status);
     };
-    
+
     const startNextSession = () => {
         UI.toggleModal('session-transition-modal', false);
         state.remainingSeconds = state.totalSeconds;
@@ -505,7 +506,7 @@ const Timer = (() => {
     };
 
     const formatTime = (seconds) => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
-    
+
     const start = () => {
         if (state.status === 'running') return;
         const isNewFocus = state.mode === '집중' && state.remainingSeconds === state.totalSeconds;
@@ -517,7 +518,7 @@ const Timer = (() => {
             UI.updateTimerControls(state.status);
         }, isNewFocus ? 1600 : 0);
     };
-    
+
     const pause = () => {
         if (state.status !== 'running') return;
         clearInterval(state.timerId);
@@ -525,7 +526,7 @@ const Timer = (() => {
         Favicon.set('paused');
         UI.updateTimerControls(state.status);
     };
-    
+
     const reset = () => {
         clearInterval(state.timerId);
         state = { ...state, status: 'idle', remainingSeconds: state.totalSeconds, logTriggered: false };
@@ -535,7 +536,7 @@ const Timer = (() => {
         UI.showRestSuggestion(false);
         restAudio?.pause();
     };
-    
+
     const applySettings = (newSettings) => {
         settings = { ...settings, ...newSettings };
         // 404 오류 방지를 위해 임시 주석 처리
@@ -665,9 +666,9 @@ const Stats = (() => {
             const endDate = new Date();
             const startDate = new Date();
             startDate.setDate(endDate.getDate() - days);
-            
+
             const logs = await FirebaseAPI.getLogsByDateRange(user.uid, startDate, endDate);
-            
+
             if (logs.length === 0) {
                 dom.content.innerHTML = '<p>선택된 기간의 데이터가 없습니다.</p>';
                 return;
@@ -788,15 +789,15 @@ const Gamification = (() => {
         if (dailyProgress.goalSet) return alert("오늘의 목표는 이미 설정되었어요.");
         const goal = UI.getDailyGoal();
         if (!goal || isNaN(goal) || goal <= 0) return alert("달성 가능한 목표를 설정해주세요.");
-        
+
         dailyProgress.goal = goal;
         dailyProgress.goalSet = true;
         profile.dailyGoals.defaultGoal = goal; // 다음 날을 위한 기본값 저장
-        
+
         UI.updateForestDisplay(dailyProgress.sessions, dailyProgress.goal);
         UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
         UI.lockGoalSetting(true);
-        
+
         await saveDailyProgress();
         alert(`오늘의 성장 목표가 ${goal} 세트로 설정되었어요. 응원할게요!`);
     };
@@ -804,7 +805,7 @@ const Gamification = (() => {
         const energy = duration >= 50 ? 2.5 : duration >= 30 ? 1.5 : 1.0;
         dailyProgress.energy += energy;
         dailyProgress.sessions += 1;
-        
+
         UI.updateForestDisplay(dailyProgress.sessions, dailyProgress.goal);
         UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
 
@@ -812,7 +813,7 @@ const Gamification = (() => {
             alert("🎉 목표 달성! 꾸준함이 당신을 성장시킵니다. 정말 대단해요!");
             Notifications.show('목표 달성!', { body: '오늘의 성장 목표를 완수했어요! 축하합니다.' });
         }
-        
+
         profile.totalFocusMinutes += duration;
         const newLevel = Math.floor(profile.totalFocusMinutes / 60) + 1;
         if (newLevel > profile.level) {
@@ -898,7 +899,7 @@ const App = (() => {
         const btn = e.target.closest('.button--preset');
         if (!btn) return;
         Timer.setConfig(
-            parseInt(btn.dataset.focus, 10), 
+            parseInt(btn.dataset.focus, 10),
             parseInt(btn.dataset.rest, 10),
             btn.dataset.condition
         );
