@@ -19,11 +19,12 @@ import {
     serverTimestamp,
     writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-// ✅ 수정됨: Chart.js ES 모듈을 명시적으로 임포트하여 오류 해결
+// ✅ 수정됨: Chart.js 및 생키 다이어그램 컨트롤러를 ES 모듈로 임포트
 import { Chart, registerables } from 'https://cdn.jsdelivr.net/npm/chart.js/dist/chart.mjs';
+import { SankeyController, Flow } from 'https://cdn.jsdelivr.net/npm/chartjs-chart-sankey/dist/chartjs-chart-sankey.mjs';
 
-// Chart.js의 모든 구성 요소를 등록합니다.
-Chart.register(...registerables);
+// Chart.js의 모든 기본 구성 요소와 생키 컨트롤러를 등록합니다.
+Chart.register(...registerables, SankeyController, Flow);
 
 
 // ===================================================================================
@@ -251,11 +252,12 @@ const UI = (() => {
         document.body.classList.toggle('body--modal-open', !!document.querySelector('.modal--visible'));
     };
 
-    const updateForestDisplay = (completed, total) => {
+    const updateForestDisplay = (completedEnergy, totalEnergy) => {
         if (!dom.forestDisplay) return;
         let html = '';
-        for (let i = 0; i < total; i++) {
-            html += `<span class="session-icon ${i < completed ? 'completed' : ''}" style="color: ${i < completed ? 'var(--primary-color)' : 'var(--border-color)'}">🍅</span>`;
+        // 에너지를 시각화하는 방식을 세션 아이콘으로 유지하되, 그 의미는 에너지로 해석
+        for (let i = 0; i < totalEnergy; i++) {
+             html += `<span class="session-icon ${i < completedEnergy ? 'completed' : ''}" style="color: ${i < completedEnergy ? 'var(--primary-color)' : 'var(--border-color)'}">🍅</span>`;
         }
         dom.forestDisplay.innerHTML = html || '<span style="font-size: 0.9rem; color: var(--text-light-color);">오늘의 목표를 설정하고 집중을 시작해 보세요.</span>';
     };
@@ -305,7 +307,7 @@ const UI = (() => {
         const topFrictionsHTML = topFrictions.length > 0 ? topFrictions.map(f => `<li>${f.tag} (${f.count}회)</li>`).join('') : '<li>오늘은 방해 요인 없이 순항하셨네요! 멋져요.</li>';
         const badgesHTML = badges?.length > 0 ? `<div class="report__stat"><p class="report__title">새로운 성장 배지</p><ul class="report__list">${badges.map(b => `<li>🏅 ${b.name}</li>`).join('')}</ul></div>` : '';
 
-        dom.reportContent.innerHTML = `<div class="report__grid"><div class="report__stat"><p class="report__title">총 몰입 시간</p><p class="report__value">${totalFocusMinutes}분</p></div><div class="report__stat"><p class="report__title">완료한 집중 세트</p><p class="report__value">${energy}세트</p></div></div>${badgesHTML}<div class="report__stat"><p class="report__title">주요 방해 요인</p><ul class="report__list">${topFrictionsHTML}</ul></div>${insight ? `<div class="report__insight"><p>${insight}</p></div>` : ''}`;
+        dom.reportContent.innerHTML = `<div class="report__grid"><div class="report__stat"><p class="report__title">총 몰입 시간</p><p class="report__value">${totalFocusMinutes}분</p></div><div class="report__stat"><p class="report__title">소모한 에너지</p><p class="report__value">${energy}</p></div></div>${badgesHTML}<div class="report__stat"><p class="report__title">주요 방해 요인</p><ul class="report__list">${topFrictionsHTML}</ul></div>${insight ? `<div class="report__insight"><p>${insight}</p></div>` : ''}`;
         if (dom.showSystemBtn) dom.showSystemBtn.classList.toggle('hidden', !reportData.topFrictionTag);
         toggleModal('report-modal', true);
     };
@@ -399,7 +401,7 @@ const Auth = (() => {
  * @description 뽀모도로 타이머 로직 및 상태 관리.
  */
 const Timer = (() => {
-    let state = { timerId: null, totalSeconds: 1500, remainingSeconds: 1500, mode: '집중 시간', status: 'idle', logTriggered: false };
+    let state = { timerId: null, totalSeconds: 1500, remainingSeconds: 1500, mode: '집중 시간', status: 'idle' };
     let config = { focusDuration: 25, restDuration: 5, condition: '보통' };
     let settings = { enhancedRest: false, alarmSound: 'alarm_clock.ogg', restSound: 'none' };
     let alarmAudio, restAudio;
@@ -409,10 +411,6 @@ const Timer = (() => {
     const tick = () => {
         state.remainingSeconds--;
         UI.updateTimerDisplay(formatTime(state.remainingSeconds), state.mode, state.remainingSeconds, state.totalSeconds);
-        if (state.mode === '집중 시간' && !state.logTriggered && state.remainingSeconds <= state.totalSeconds * 0.8) {
-            state.logTriggered = true;
-            Logger.triggerLogPopup();
-        }
         if (state.remainingSeconds <= 0) completeSession();
     };
 
@@ -425,6 +423,16 @@ const Timer = (() => {
 
         if (state.mode === '집중 시간') {
             Gamification.updateFocusSession(config.focusDuration);
+            Logger.triggerLogPopup(); // ✅ 변경됨: 세션 종료 후 로그 팝업 호출
+        } else {
+            // 휴식 시간 종료 후 바로 다음 집중 세션 시작
+            startNextFocusSession();
+        }
+    };
+    
+    // ✅ 추가됨: 로그 기록 후 다음 세션을 시작하기 위한 함수
+    const startNextPhase = () => {
+        if(state.mode === '집중 시간') { // 이제 휴식 시간으로 전환
             state.mode = '휴식 시간';
             state.totalSeconds = config.restDuration * 60;
             const suggestion = config.restDuration >= 10 ? restSuggestions.long : restSuggestions.short;
@@ -432,27 +440,27 @@ const Timer = (() => {
             Notifications.show('고생하셨어요!', { body: `${config.restDuration}분간 휴식하며 다음 집중을 준비하세요.` });
             if (settings.enhancedRest) {
                  UI.showRestSuggestion(true, suggestion);
-                 // 404 오류 방지 주석 해제: 실제 파일 경로와 일치하는 경우 주석을 풀어야 합니다.
                  // if (settings.restSound !== 'none') { restAudio?.play(); }
             }
-        } else {
-            state.mode = '집중 시간';
-            state.totalSeconds = config.focusDuration * 60;
-            UI.showSessionTransitionModal({ icon: '🔥', title: '다시 집중할 시간이에요!', message: `${config.focusDuration}분간 다시 한번 몰입해 보세요.`, buttonText: '집중하기', buttonClass: 'button--success' });
-            Notifications.show('다시 집중할 시간이에요', { body: `이제 ${config.focusDuration}분간 다시 한번 몰입해 보세요.` });
-            if (settings.enhancedRest) {
-                UI.showRestSuggestion(false);
-                // 404 오류 방지 주석 해제
-                // restAudio?.pause();
-            }
+        } else { // 휴식 끝, 집중 시간으로 전환
+            startNextFocusSession();
         }
-        UI.updateTimerControls(state.status);
     };
 
+    const startNextFocusSession = () => {
+        state.mode = '집중 시간';
+        state.totalSeconds = config.focusDuration * 60;
+        UI.showSessionTransitionModal({ icon: '🔥', title: '다시 집중할 시간이에요!', message: `${config.focusDuration}분간 다시 한번 몰입해 보세요.`, buttonText: '집중하기', buttonClass: 'button--primary' });
+        Notifications.show('다시 집중할 시간이에요', { body: `이제 ${config.focusDuration}분간 다시 한번 몰입해 보세요.` });
+        if (settings.enhancedRest) {
+            UI.showRestSuggestion(false);
+            // restAudio?.pause();
+        }
+    };
+    
     const startNextSession = () => {
         UI.toggleModal('session-transition-modal', false);
         state.remainingSeconds = state.totalSeconds;
-        state.logTriggered = false;
         UI.updateTimerDisplay(formatTime(state.remainingSeconds), state.mode, state.remainingSeconds, state.totalSeconds);
         UI.updateTimerControls(state.status);
         start();
@@ -482,7 +490,7 @@ const Timer = (() => {
 
     const reset = () => {
         clearInterval(state.timerId);
-        state = { ...state, status: 'idle', remainingSeconds: state.totalSeconds, logTriggered: false };
+        state = { ...state, status: 'idle', remainingSeconds: state.totalSeconds };
         Favicon.set('default');
         UI.updateTimerDisplay(formatTime(state.remainingSeconds), state.mode, state.remainingSeconds, state.totalSeconds);
         UI.updateTimerControls(state.status);
@@ -503,7 +511,7 @@ const Timer = (() => {
     };
 
     return {
-        start, pause, reset, startNextSession, applySettings,
+        start, pause, reset, startNextSession, applySettings, startNextPhase,
         setConfig: (focus, rest, condition) => {
             config = { focusDuration: focus, restDuration: rest, condition };
             state.mode = '집중 시간';
@@ -522,7 +530,7 @@ const Timer = (() => {
  */
 const Logger = (() => {
     let distractions = [];
-    const triggerLogPopup = () => { Timer.pause(); UI.toggleModal('log-modal', true); };
+    const triggerLogPopup = () => UI.toggleModal('log-modal', true);
     const handleDistractionInput = (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -544,7 +552,7 @@ const Logger = (() => {
             distractions = [];
             UI.resetLogForm();
             UI.toggleModal('log-modal', false);
-            Timer.start();
+            Timer.startNextPhase(); // ✅ 변경됨: 로그 기록 후 다음 단계(휴식 또는 다음 세션) 시작
         } catch (error) { console.error("기록 저장 중 오류:", error); alert("기록 저장 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요."); }
     };
     return { triggerLogPopup, handleLogSubmit, handleDistractionInput };
@@ -561,7 +569,7 @@ const Report = (() => {
         const totalFocusMinutes = logs.reduce((sum, log) => sum + log.sessionDuration, 0);
         const frictionCounts = logs.flatMap(log => log.frictionTags).reduce((acc, tag) => ({ ...acc, [tag]: (acc[tag] || 0) + 1 }), {});
         const topFrictions = Object.entries(frictionCounts).sort(([, a], [, b]) => b - a).slice(0, 3).map(([tag, count]) => ({ tag, count }));
-        const energy = logs.length;
+        const energy = logs.reduce((sum, log) => sum + (log.sessionDuration >= 50 ? 2 : 1), 0);
         return { totalFocusMinutes, energy, topFrictions, topFrictionTag: topFrictions[0]?.tag || null, frictionCounts };
     };
     const generateDailyReport = async () => {
@@ -601,12 +609,38 @@ const Report = (() => {
  * @description 마찰 통계 대시보드 관리.
  */
 const Stats = (() => {
-    let chartInstance = null;
+    let barChartInstance = null;
+    let sankeyChartInstance = null;
+
     const show = async () => {
         UI.toggleModal('stats-modal', true);
         await render();
     };
+    
     const handlePeriodChange = async () => await render();
+
+    const analyzeEmotionFrictionPattern = (logs) => {
+        const connections = {};
+        logs.forEach(log => {
+            if (log.emotionTags.length > 0 && log.frictionTags.length > 0) {
+                log.emotionTags.forEach(emotion => {
+                    log.frictionTags.forEach(friction => {
+                        const key = `${emotion}|${friction}`;
+                        connections[key] = (connections[key] || 0) + 1;
+                    });
+                });
+            }
+        });
+
+        const nodes = [...new Set(logs.flatMap(l => [...l.emotionTags, ...l.frictionTags]))];
+        const data = Object.entries(connections).map(([key, value]) => {
+            const [from, to] = key.split('|');
+            return { from, to, flow: value };
+        });
+        
+        return { labels: nodes, data };
+    };
+    
     const render = async () => {
         const user = Auth.getCurrentUser();
         if (!user) return;
@@ -629,46 +663,72 @@ const Stats = (() => {
 
             const frictionCounts = logs.flatMap(log => log.frictionTags).reduce((acc, tag) => ({ ...acc, [tag]: (acc[tag] || 0) + 1 }), {});
             const sortedFrictions = Object.entries(frictionCounts).sort(([,a],[,b]) => b - a);
+            const emotionFrictionData = analyzeEmotionFrictionPattern(logs);
 
             dom.content.innerHTML = `
                 <div class="report__stat">
-                    <p class="report__title">가장 자주 나타난 방해 요인 Top 3</p>
+                    <p class="report__title">가장 자주 나타난 방해 요인</p>
                     <ul class="report__list">
                         ${sortedFrictions.slice(0, 3).map(([tag, count]) => `<li>${tag} (${count}회)</li>`).join('') || '<li>기록된 방해 요인이 없습니다.</li>'}
                     </ul>
                 </div>
-                <div><canvas id="frictionChart"></canvas></div>
+                <div><canvas id="frictionBarChart"></canvas></div>
+                <div class="report__stat" style="margin-top: 2rem;">
+                    <p class="report__title">감정-방해 요인 패턴 분석</p>
+                </div>
+                <div><canvas id="emotionFrictionSankeyChart"></canvas></div>
                 <p class="stats-insight">${generateInsight(sortedFrictions[0]?.[0])}</p>
             `;
 
-            if (chartInstance) chartInstance.destroy();
-            const ctx = document.getElementById('frictionChart').getContext('2d');
-            chartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: sortedFrictions.map(([tag]) => tag),
-                    datasets: [{
-                        label: '방해 요인 횟수',
-                        data: sortedFrictions.map(([, count]) => count),
-                        backgroundColor: 'rgba(59, 91, 219, 0.7)',
-                        borderColor: 'rgba(59, 91, 219, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
-                    plugins: { legend: { display: false } }
-                }
-            });
+            if (barChartInstance) barChartInstance.destroy();
+            const barCtx = document.getElementById('frictionBarChart')?.getContext('2d');
+            if (barCtx) {
+                barChartInstance = new Chart(barCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: sortedFrictions.map(([tag]) => tag),
+                        datasets: [{
+                            label: '방해 요인 횟수',
+                            data: sortedFrictions.map(([, count]) => count),
+                            backgroundColor: 'rgba(59, 91, 219, 0.7)',
+                        }]
+                    },
+                    options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } }
+                });
+            }
+
+            if (sankeyChartInstance) sankeyChartInstance.destroy();
+            const sankeyCtx = document.getElementById('emotionFrictionSankeyChart')?.getContext('2d');
+            if (sankeyCtx && emotionFrictionData.data.length > 0) {
+                sankeyChartInstance = new Chart(sankeyCtx, {
+                    type: 'sankey',
+                    data: {
+                        labels: emotionFrictionData.labels,
+                        datasets: [{ data: emotionFrictionData.data }]
+                    },
+                    options: {
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => `${context.raw.from} -> ${context.raw.to}: ${context.raw.flow}회`
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
         } catch (error) {
             console.error("통계 렌더링 오류:", error);
             dom.content.innerHTML = '<p>통계를 불러오는 중 오류가 발생했습니다.</p>';
         }
     };
+
     const generateInsight = (topFriction) => {
         if (!topFriction) return "데이터가 충분히 쌓이면 더 깊이 있는 분석을 제공해 드릴게요.";
         return `가장 큰 방해 요인은 [${topFriction}]이었네요. 이 문제를 해결할 나만의 규칙을 만들어보는 건 어떨까요?`;
     };
+
     return { show, handlePeriodChange };
 })();
 
@@ -717,7 +777,7 @@ const Systems = (() => {
  */
 const Gamification = (() => {
     let profile = { level: 1, totalFocusMinutes: 0, streak: 0, lastSessionDate: null, badges: [], dailyGoals: {} };
-    let dailyProgress = { sessions: 0, goal: 8, goalSet: false };
+    let dailyProgress = { energy: 0, goal: 8, goalSet: false };
     const getTodayString = () => new Date().toISOString().split('T')[0];
 
     const loadProfile = async () => {
@@ -733,9 +793,9 @@ const Gamification = (() => {
     const loadDailyProgress = () => {
         const todayStr = getTodayString();
         const goalData = profile.dailyGoals?.[todayStr];
-        dailyProgress = goalData ? { ...goalData } : { sessions: 0, goal: profile.dailyGoals?.defaultGoal || 8, goalSet: false };
-        UI.updateForestDisplay(dailyProgress.sessions, dailyProgress.goal);
-        UI.updateGoalProgress(dailyProgress.sessions, dailyProgress.goal);
+        dailyProgress = goalData ? { ...goalData } : { energy: 0, goal: profile.dailyGoals?.defaultGoal || 8, goalSet: false };
+        UI.updateForestDisplay(dailyProgress.energy, dailyProgress.goal);
+        UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
         UI.lockGoalSetting(dailyProgress.goalSet);
     };
     const setDailyGoal = async () => {
@@ -745,24 +805,25 @@ const Gamification = (() => {
 
         dailyProgress.goal = goal;
         dailyProgress.goalSet = true;
-        profile.dailyGoals.defaultGoal = goal; // 다음 날을 위한 기본값 저장
+        profile.dailyGoals.defaultGoal = goal;
 
-        UI.updateForestDisplay(dailyProgress.sessions, dailyProgress.goal);
-        UI.updateGoalProgress(dailyProgress.sessions, dailyProgress.goal);
+        UI.updateForestDisplay(dailyProgress.energy, dailyProgress.goal);
+        UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
         UI.lockGoalSetting(true);
 
         await saveDailyProgress();
-        alert(`오늘의 목표가 ${goal}세트로 설정되었어요. 응원할게요!`);
+        alert(`오늘의 목표 에너지가 ${goal}로 설정되었어요. 응원할게요!`);
     };
     const updateFocusSession = (duration) => {
-        dailyProgress.sessions += 1;
+        const consumedEnergy = duration >= 50 ? 2 : 1;
+        dailyProgress.energy += consumedEnergy;
 
-        UI.updateForestDisplay(dailyProgress.sessions, dailyProgress.goal);
-        UI.updateGoalProgress(dailyProgress.sessions, dailyProgress.goal);
+        UI.updateForestDisplay(dailyProgress.energy, dailyProgress.goal);
+        UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
 
-        if (dailyProgress.goal > 0 && dailyProgress.sessions >= dailyProgress.goal && dailyProgress.sessions - 1 < dailyProgress.goal) {
+        if (dailyProgress.goal > 0 && dailyProgress.energy >= dailyProgress.goal && (dailyProgress.energy - consumedEnergy) < dailyProgress.goal) {
             alert("🎉 목표 달성! 꾸준함이 성장을 만들어요. 정말 대단해요!");
-            Notifications.show('목표 달성!', { body: '오늘의 목표를 모두 완료했어요! 축하합니다.' });
+            Notifications.show('목표 달성!', { body: '오늘의 목표 에너지를 모두 채웠어요! 축하합니다.' });
         }
 
         profile.totalFocusMinutes += duration;
