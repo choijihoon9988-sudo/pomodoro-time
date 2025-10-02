@@ -20,9 +20,7 @@ import {
     writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// ✅ 수정됨: Chart.js 관련 import 및 register 코드를 모두 삭제.
-// index.html에서 직접 라이브러리를 로드하므로 더 이상 필요 없습니다.
-
+// ✅ 수정됨: Chart.js 관련 import 코드는 모두 삭제되었습니다.
 
 // ===================================================================================
 // Firebase 프로젝트 구성 정보
@@ -607,6 +605,11 @@ const Report = (() => {
  * @description 마찰 통계 대시보드 관리.
  */
 const Stats = (() => {
+    // ✅ 수정됨: Chart.js 라이브러리에서 필요한 객체들을 전역 스코프에서 가져옵니다.
+    const { Chart, SankeyController, Flow } = window;
+    // ✅ 수정됨: Sankey 컨트롤러를 명시적으로 등록합니다.
+    Chart.register(SankeyController, Flow);
+
     let barChartInstance = null;
     let sankeyChartInstance = null;
 
