@@ -206,7 +206,7 @@ h1, h2, h3, h4 {
     gap: 1rem;
 }
 
-/* 위젯 */
+/* --- 성장의 숲 위젯 --- */
 .dashboard-widgets {
     display: flex;
     flex-direction: column;
@@ -217,6 +217,11 @@ h1, h2, h3, h4 {
     background: var(--background-color);
     padding: 1.5rem; /* 위젯 내부 패딩 조정 */
     border-radius: var(--border-radius-md);
+    transition: filter 0.5s ease;
+}
+
+.widget.dormant {
+    filter: grayscale(80%);
 }
 
 .widget__header {
@@ -251,29 +256,73 @@ h1, h2, h3, h4 {
     cursor: not-allowed;
 }
 
-.widget__value {
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--text-color);
-    margin: 0 0 0.75rem; /* 값과 아이콘 사이 간격 추가 */
+#seeds-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    min-height: 50px;
+    align-items: center;
 }
 
-.widget__content {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    min-height: 50px;
-    font-size: 1.75rem;
+.seed-icon, .sprout-icon {
+    font-size: 1.5rem;
     line-height: 1;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.widget__content .session-icon {
-    transition: transform 0.3s ease;
+
+.seed-icon {
+    color: var(--border-color);
 }
-.widget__content .session-icon.completed {
-    transform: scale(1.1);
+
+.sprout-icon {
+    color: var(--success-color);
+    animation: pop-in 0.5s ease;
 }
+
+.sprout-icon.special {
+    color: #FBBF24; /* Golden color for special trees */
+    animation: pop-in-special 0.6s ease;
+}
+
+
+@keyframes pop-in {
+    from { transform: scale(0.5) rotate(-15deg); opacity: 0; }
+    to { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes pop-in-special {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { transform: scale(1.2) rotate(10deg); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+
+.widget__divider {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 1.5rem 0;
+}
+
+.forest-summary {
+    font-size: 0.9rem;
+    color: var(--text-light-color);
+    line-height: 1.6;
+}
+.forest-summary p {
+    margin-bottom: 0;
+}
+.forest-summary strong {
+    color: var(--text-color);
+    font-weight: 600;
+}
+#forest-dormant-message {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background-color: #FEF3C7;
+    color: #92400E;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.85rem;
+}
+
 
 /* FOOTER & SETTINGS */
 .app-footer {

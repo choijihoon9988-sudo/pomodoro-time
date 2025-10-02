@@ -59,7 +59,12 @@ const FirebaseAPI = (() => {
         const batch = writeBatch(db);
         batch.set(userProfileRef, {
             email, level: 1, totalFocusMinutes: 0, streak: 0,
-            lastSessionDate: null, createdAt: serverTimestamp(), badges: [], dailyGoals: {}
+            lastActiveDate: null, // streak 계산용
+            createdAt: serverTimestamp(),
+            badges: [],
+            dailyProgressLog: {}, // 일일 진행상황 저장
+            totalTrees: 0, // 총 나무 수
+            forest: [] // 심은 나무 종류 저장 (가변 보상용)
         });
         const settingsRef = doc(db, 'users', userId, 'settings', 'default');
         batch.set(settingsRef, {
@@ -146,11 +151,11 @@ const UI = (() => {
             'my-systems-btn', 'stats-btn', 'log-modal', 'log-form', 'log-activity', 'friction-tags', 'emotion-tags',
             'distraction-input', 'distraction-list', 'report-modal', 'report-content', 'show-system-btn',
             'system-suggestion-modal', 'system-suggestion-text', 'adopt-system-btn', 'my-systems-modal',
-            'my-systems-list', 'daily-goal-input', 'set-goal-btn', 'daily-goal-container', 'forest-display',
+            'my-systems-list', 'daily-goal-input', 'set-goal-btn', 'daily-goal-container', 'seeds-display',
             'alarm-sound-select', 'rest-sound-select', 'enhanced-rest-toggle', 'sound-therapy-container',
             'session-transition-modal', 'transition-icon', 'transition-title',
             'transition-message', 'transition-action-btn', 'positive-priming', 'positive-priming-text',
-            'timer-mode', 'timer-clock', 'current-energy', 'total-goal', 'rest-suggestion-container',
+            'timer-mode', 'timer-clock', 'rest-suggestion-container', 'total-trees-count', 'forest-dormant-message', 'forest-widget',
             'rest-suggestion-text', 'reset-confirm-modal', 'cancel-reset-btn', 'confirm-reset-btn',
             'stats-modal', 'stats-period-select', 'stats-content'
         ];
@@ -196,7 +201,7 @@ const UI = (() => {
                 if (visibleModal && visibleModal.id !== 'session-transition-modal') toggleModal(visibleModal.id, false);
             }
         });
-        dom.setGoalBtn?.addEventListener('click', Gamification.setDailyGoal);
+        dom.setGoalBtn?.addEventListener('click', Gamification.setSeedGoal);
         dom.alarmSoundSelect?.addEventListener('change', (e) => App.handleSoundChange('alarmSound', e.target.value));
         dom.restSoundSelect?.addEventListener('change', (e) => App.handleSoundChange('restSound', e.target.value));
         dom.enhancedRestToggle?.addEventListener('change', App.handleEnhancedRestToggle);
@@ -246,27 +251,31 @@ const UI = (() => {
         }
         document.body.classList.toggle('body--modal-open', !!document.querySelector('.modal--visible'));
     };
-
-    const updateForestDisplay = (completedEnergy, totalEnergy) => {
-        if (!dom.forestDisplay) return;
+    
+    const renderSeeds = (completed, total, specialIndices = []) => {
+        if (!dom.seedsDisplay) return;
         let html = '';
-        // 에너지를 시각화하는 방식을 세션 아이콘으로 유지하되, 그 의미는 에너지로 해석
-        for (let i = 0; i < totalEnergy; i++) {
-             html += `<span class="session-icon ${i < completedEnergy ? 'completed' : ''}" style="color: ${i < completedEnergy ? 'var(--primary-color)' : 'var(--border-color)'}">🍅</span>`;
+        for (let i = 0; i < total; i++) {
+            if (i < completed) {
+                const isSpecial = specialIndices.includes(i);
+                html += `<span class="sprout-icon ${isSpecial ? 'special' : ''}">${isSpecial ? '✨' : '🌱'}</span>`;
+            } else {
+                html += `<span class="seed-icon">🌰</span>`;
+            }
         }
-        dom.forestDisplay.innerHTML = html || '<span style="font-size: 0.9rem; color: var(--text-light-color);">오늘의 목표를 설정하고 집중을 시작해 보세요.</span>';
-    };
+        dom.seedsDisplay.innerHTML = html || '<span style="font-size: 0.9rem; color: var(--text-light-color);">오늘 심을 씨앗 수를 정하고 집중을 시작하세요.</span>';
+        if (dom.dailyGoalInput) dom.dailyGoalInput.value = total;
 
-    const updateGoalProgress = (current, total) => {
-        if (!dom.currentEnergy || !dom.totalGoal) return;
-        dom.currentEnergy.textContent = current;
-        dom.totalGoal.textContent = total;
-        if(dom.dailyGoalInput) dom.dailyGoalInput.value = total;
-
-        const percentage = total > 0 ? Math.min(current / total, 1) : 0;
+        const percentage = total > 0 ? Math.min(completed / total, 1) : 0;
         if (dom.timerProgressGoal) {
             dom.timerProgressGoal.style.strokeDashoffset = CIRCLE_CIRCUMFERENCE * (1 - percentage);
         }
+    };
+
+    const renderForestSummary = (totalTrees, isDormant) => {
+        if (dom.totalTreesCount) dom.totalTreesCount.textContent = totalTrees;
+        if (dom.forestDormantMessage) dom.forestDormantMessage.classList.toggle('hidden', !isDormant);
+        if (dom.forestWidget) dom.forestWidget.classList.toggle('dormant', isDormant);
     };
 
     const showSessionTransitionModal = (data) => {
@@ -279,11 +288,11 @@ const UI = (() => {
         toggleModal('session-transition-modal', true);
     };
 
-    const showPositivePriming = (message) => {
+    const showPositivePriming = (message, isWakeUp = false) => {
         if (!dom.positivePrimingText || !dom.positivePriming) return;
-        dom.positivePrimingText.textContent = message;
+        dom.positivePrimingText.innerHTML = message; // innerHTML to allow line breaks
         dom.positivePriming.classList.add('positive-priming--visible');
-        setTimeout(() => dom.positivePriming.classList.remove('positive-priming--visible'), 1500);
+        setTimeout(() => dom.positivePriming.classList.remove('positive-priming--visible'), isWakeUp ? 3000 : 1500);
     };
 
     const resetLogForm = () => {
@@ -298,15 +307,15 @@ const UI = (() => {
 
     const renderReport = (reportData) => {
         if (!dom.reportContent) return;
-        const { totalFocusMinutes, energy, topFrictions, insight, badges } = reportData;
+        const { totalFocusMinutes, energy, topFrictions, insight, newTrees, specialTrees } = reportData;
         const topFrictionsHTML = topFrictions.length > 0 ? topFrictions.map(f => `<li>${f.tag} (${f.count}회)</li>`).join('') : '<li>오늘은 방해 요인 없이 순항하셨네요! 멋져요.</li>';
-        const badgesHTML = badges?.length > 0 ? `<div class="report__stat"><p class="report__title">새로운 성장 배지</p><ul class="report__list">${badges.map(b => `<li>🏅 ${b.name}</li>`).join('')}</ul></div>` : '';
+        const newTreesHTML = newTrees > 0 ? `<div class="report__stat"><p class="report__title">오늘 자라난 나무</p><p class="report__value">${newTrees}그루 ${specialTrees > 0 ? '(✨' + specialTrees + ')' : ''}</p></div>` : '';
 
-        dom.reportContent.innerHTML = `<div class="report__grid"><div class="report__stat"><p class="report__title">총 몰입 시간</p><p class="report__value">${totalFocusMinutes}분</p></div><div class="report__stat"><p class="report__title">소모한 에너지</p><p class="report__value">${energy}</p></div></div>${badgesHTML}<div class="report__stat"><p class="report__title">주요 방해 요인</p><ul class="report__list">${topFrictionsHTML}</ul></div>${insight ? `<div class="report__insight"><p>${insight}</p></div>` : ''}`;
+        dom.reportContent.innerHTML = `<div class="report__grid">${newTreesHTML}<div class="report__stat"><p class="report__title">총 몰입 시간</p><p class="report__value">${totalFocusMinutes}분</p></div></div><div class="report__stat"><p class="report__title">주요 방해 요인</p><ul class="report__list">${topFrictionsHTML}</ul></div>${insight ? `<div class="report__insight"><p>${insight}</p></div>` : ''}`;
         if (dom.showSystemBtn) dom.showSystemBtn.classList.toggle('hidden', !reportData.topFrictionTag);
         toggleModal('report-modal', true);
     };
-
+    
     const showSystemSuggestion = (suggestion) => {
         if (!dom.systemSuggestionText || !dom.adoptSystemBtn) return;
         dom.systemSuggestionText.textContent = suggestion.description;
@@ -341,7 +350,7 @@ const UI = (() => {
         init: () => { cacheDOM(); bindEventListeners(); renderTagButtons(); renderSelectOptions(); },
         updateGamificationStats, updateTimerDisplay,
         updateTimerControls, toggleModal, resetLogForm, renderDistractionList,
-        renderReport, showSystemSuggestion, renderMySystems, updateForestDisplay, updateGoalProgress,
+        renderReport, showSystemSuggestion, renderMySystems, renderSeeds, renderForestSummary,
         showSessionTransitionModal, showPositivePriming, updateActivePreset, showRestSuggestion,
         lockGoalSetting, toggleEnhancedRestUI,
         getLogFormData: () => ({
@@ -465,13 +474,20 @@ const Timer = (() => {
     const start = () => {
         if (state.status === 'running') return;
         const isNewFocus = state.mode === '집중 시간' && state.remainingSeconds === state.totalSeconds;
-        if (isNewFocus) UI.showPositivePriming(positiveMessages[Math.floor(Math.random() * positiveMessages.length)]);
+        if (isNewFocus) {
+            const isWakingUp = Gamification.isForestDormant();
+            const message = isWakingUp 
+                ? "오랜만이에요! <br> 당신의 첫 집중으로 숲이 다시 깨어납니다." 
+                : positiveMessages[Math.floor(Math.random() * positiveMessages.length)];
+            UI.showPositivePriming(message, isWakingUp);
+        }
+        
         setTimeout(() => {
             state.status = 'running';
             Favicon.set(state.mode === '집중 시간' ? 'focus' : 'rest');
             state.timerId = setInterval(tick, 1000);
             UI.updateTimerControls(state.status);
-        }, isNewFocus ? 1600 : 0);
+        }, isNewFocus ? (Gamification.isForestDormant() ? 3100 : 1600) : 0);
     };
 
     const pause = () => {
@@ -554,7 +570,7 @@ const Logger = (() => {
 
 /**
  * @module Report
- * @description 데일리 리포트 생성.
+ * @description 데일리 리포트 생성 및 '하루 마무리' 로직 담당.
  */
 const Report = (() => {
     let currentReportData = null;
@@ -571,13 +587,18 @@ const Report = (() => {
         try {
             const today = new Date();
             const logs = await FirebaseAPI.getLogsByDateRange(user.uid, new Date(today.setHours(0, 0, 0, 0)), new Date(today.setHours(23, 59, 59, 999)));
-            if (logs.length === 0) return alert("오늘의 집중 기록이 없네요. 첫 집중을 시작해 볼까요?");
+            if (logs.length === 0) return alert("오늘의 집중 기록이 없네요. '하루 마무리'를 하려면 최소 1번의 집중을 완료해야 해요.");
+
+            const { newTrees, specialTrees } = await Gamification.finalizeDailyGrowth();
             const analysis = analyzeLogs(logs);
             const insight = generateInsight(analysis.frictionCounts);
-            const earnedBadges = await Gamification.checkBadges(logs);
-            currentReportData = { ...analysis, insight, badges: earnedBadges };
+
+            currentReportData = { ...analysis, insight, newTrees, specialTrees };
             UI.renderReport(currentReportData);
+
             await Gamification.updateStreak();
+            await Gamification.loadProfile(); // 프로필 및 UI 새로고침
+            
         } catch (error) { console.error("리포트 생성 중 오류:", error); }
     };
     const generateInsight = (counts) => {
@@ -594,7 +615,7 @@ const Report = (() => {
         };
         return { ...(suggestions[tag] || { title: "나만의 규칙 만들기", description: `[${tag}] 문제를 해결하기 위한 자신만의 규칙을 만들어보세요. 예를 들어, [주변 소음]이 문제라면 '노이즈 캔슬링 헤드폰 사용하기' 같은 규칙을 만들 수 있어요.` }), targetFriction: tag };
     };
- // Report 모듈 내부
+ 
     return { generateDailyReport, getSystemSuggestion, getCurrentReportData: () => currentReportData };
 })();
 
@@ -605,14 +626,12 @@ const Report = (() => {
 const Stats = (() => {
     let barChartInstance = null;
     let sankeyChartInstance = null;
-    let areControllersRegistered = false; // 컨트롤러가 한 번만 등록되도록 보장하는 플래그
+    let areControllersRegistered = false; 
 
-    // 컨트롤러를 지연 등록하는 함수
     const registerControllers = () => {
         if (areControllersRegistered) return;
         try {
             const { Chart, SankeyController, Flow } = window;
-            // window 객체에 컨트롤러가 로드되었는지 확인
             if (Chart && SankeyController && Flow) {
                 Chart.register(SankeyController, Flow);
                 areControllersRegistered = true;
@@ -654,7 +673,7 @@ const Stats = (() => {
     };
     
     const render = async () => {
-        registerControllers(); // 차트를 렌더링하기 직전에 컨트롤러 등록을 시도
+        registerControllers(); 
 
         const user = Auth.getCurrentUser();
         if (!user) return;
@@ -714,7 +733,7 @@ const Stats = (() => {
             if (sankeyChartInstance) sankeyChartInstance.destroy();
             const sankeyCtx = document.getElementById('emotionFrictionSankeyChart')?.getContext('2d');
             if (sankeyCtx && emotionFrictionData.data.length > 0) {
-                const { Chart } = window; // 전역 Chart 객체를 다시 참조
+                const { Chart } = window;
                 sankeyChartInstance = new Chart(sankeyCtx, {
                     type: 'sankey',
                     data: {
@@ -788,11 +807,12 @@ const Systems = (() => {
 
 /**
  * @module Gamification
- * @description 레벨, 스트릭, 뱃지 등 게임화 요소 관리.
+ * @description '성장의 숲' 시스템을 포함한 모든 게임화 요소 관리
  */
 const Gamification = (() => {
-    let profile = { level: 1, totalFocusMinutes: 0, streak: 0, lastSessionDate: null, badges: [], dailyGoals: {} };
-    let dailyProgress = { energy: 0, goal: 8, goalSet: false };
+    let profile = { level: 1, totalFocusMinutes: 0, streak: 0, lastActiveDate: null, badges: [], totalTrees: 0, dailyProgressLog: {}, isDormant: false };
+    let dailyProgress = { seedGoal: 8, seedsCompleted: 0, goalSet: false, specialTreesToday: [] };
+    let consecutiveFocusSessions = 0;
     const getTodayString = () => new Date().toISOString().split('T')[0];
 
     const loadProfile = async () => {
@@ -801,44 +821,68 @@ const Gamification = (() => {
         const profileSnap = await FirebaseAPI.getUserProfile(user.uid);
         if (profileSnap.exists()) {
             profile = profileSnap.data();
+            
+            // 휴면 상태 체크
+            const lastDate = profile.lastActiveDate?.toDate();
+            if (lastDate) {
+                const today = new Date();
+                const diffTime = Math.abs(today - lastDate);
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                profile.isDormant = diffDays >= 3;
+            } else {
+                 profile.isDormant = false;
+            }
+
             UI.updateGamificationStats(profile.level, profile.streak);
+            UI.renderForestSummary(profile.totalTrees || 0, profile.isDormant);
             loadDailyProgress();
         }
     };
+
     const loadDailyProgress = () => {
         const todayStr = getTodayString();
-        const goalData = profile.dailyGoals?.[todayStr];
-        dailyProgress = goalData ? { ...goalData } : { energy: 0, goal: profile.dailyGoals?.defaultGoal || 8, goalSet: false };
-        UI.updateForestDisplay(dailyProgress.energy, dailyProgress.goal);
-        UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
+        const progressData = profile.dailyProgressLog?.[todayStr];
+        dailyProgress = progressData ? { ...progressData } : { seedGoal: 8, seedsCompleted: 0, goalSet: false, specialTreesToday: [] };
+        UI.renderSeeds(dailyProgress.seedsCompleted, dailyProgress.seedGoal, dailyProgress.specialTreesToday);
         UI.lockGoalSetting(dailyProgress.goalSet);
     };
-    const setDailyGoal = async () => {
+
+    const setSeedGoal = async () => {
         if (dailyProgress.goalSet) return alert("오늘의 목표는 이미 설정되었어요.");
         const goal = UI.getDailyGoal();
-        if (!goal || isNaN(goal) || goal <= 0) return alert("달성 가능한 목표를 설정해 주세요.");
+        if (!goal || isNaN(goal) || goal <= 0) return alert("1 이상의 씨앗 목표를 설정해 주세요.");
 
-        dailyProgress.goal = goal;
+        dailyProgress.seedGoal = goal;
         dailyProgress.goalSet = true;
-        profile.dailyGoals.defaultGoal = goal;
 
-        UI.updateForestDisplay(daily.energy, dailyProgress.goal);
-        UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
+        UI.renderSeeds(dailyProgress.seedsCompleted, dailyProgress.seedGoal, dailyProgress.specialTreesToday);
         UI.lockGoalSetting(true);
 
         await saveDailyProgress();
-        alert(`오늘의 목표 에너지가 ${goal}로 설정되었어요. 응원할게요!`);
+        alert(`오늘 심을 씨앗이 ${goal}개로 설정되었어요. 응원할게요!`);
     };
+
     const updateFocusSession = (duration) => {
-        const consumedEnergy = duration >= 50 ? 2 : 1;
-        dailyProgress.energy += consumedEnergy;
+        if (profile.isDormant) {
+            profile.isDormant = false;
+            UI.renderForestSummary(profile.totalTrees, false);
+            Notifications.show('🌳 숲이 깨어났어요!', { body: '당신의 노력으로 숲이 다시 활기를 되찾았어요!' });
+        }
+        
+        dailyProgress.seedsCompleted++;
+        consecutiveFocusSessions++;
 
-        UI.updateForestDisplay(dailyProgress.energy, dailyProgress.goal);
-        UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
+        // 가변 보상: 3연속 집중 시 특별한 새싹
+        if (consecutiveFocusSessions === 3) {
+            dailyProgress.specialTreesToday.push(dailyProgress.seedsCompleted - 1);
+            consecutiveFocusSessions = 0; // 카운터 리셋
+        }
 
-        if (dailyProgress.goal > 0 && dailyProgress.energy >= dailyProgress.goal && (dailyProgress.energy - consumedEnergy) < dailyProgress.goal) {
-            alert("🎉 목표 달성! 꾸준함이 성장을 만들어요. 정말 대단해요!");
-            Notifications.show('목표 달성!', { body: '오늘의 목표 에너지를 모두 채웠어요! 축하합니다.' });
+        UI.renderSeeds(dailyProgress.seedsCompleted, dailyProgress.seedGoal, dailyProgress.specialTreesToday);
+
+        if (dailyProgress.seedGoal > 0 && dailyProgress.seedsCompleted >= dailyProgress.seedGoal && (dailyProgress.seedsCompleted - 1) < dailyProgress.seedGoal) {
+            alert("🎉 목표 달성! 오늘의 씨앗을 모두 새싹으로 키웠네요!");
+            Notifications.show('목표 달성!', { body: '오늘 심기로 한 씨앗을 모두 틔웠어요! 축하합니다.' });
         }
 
         profile.totalFocusMinutes += duration;
@@ -847,54 +891,80 @@ const Gamification = (() => {
             profile.level = newLevel;
             alert(`✨ 레벨업! ${newLevel} 레벨을 달성했어요!`);
             Notifications.show('레벨업!', { body: `${newLevel} 레벨 달성을 축하합니다!` });
+            saveProfile(); // 레벨업 시 즉시 저장
         }
-        saveProfile();
         saveDailyProgress();
     };
+
+    const finalizeDailyGrowth = async () => {
+        const todayStr = getTodayString();
+        const progress = profile.dailyProgressLog?.[todayStr];
+        if (!progress || progress.seedsCompleted === 0) {
+            return { newTrees: 0, specialTrees: 0 };
+        }
+        
+        profile.totalTrees = (profile.totalTrees || 0) + progress.seedsCompleted;
+        // 향후 나무 종류 저장을 위해 forest 배열에 추가
+        const newTreesData = { date: todayStr, count: progress.seedsCompleted, specialCount: progress.specialTreesToday.length };
+        if (!profile.forest) profile.forest = [];
+        profile.forest.push(newTreesData);
+        
+        profile.lastActiveDate = Timestamp.now();
+        await saveProfile();
+
+        return { newTrees: progress.seedsCompleted, specialTrees: progress.specialTreesToday.length };
+    };
+
     const updateStreak = async () => {
-        const todayStr = new Date().toDateString();
-        const lastDate = profile.lastSessionDate?.toDate();
-        if (lastDate?.toDateString() !== todayStr) {
+        const today = new Date().toDateString();
+        const lastDate = profile.lastActiveDate?.toDate();
+
+        if (lastDate?.toDateString() !== today) {
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
-            profile.streak = lastDate?.toDateString() === yesterday.toDateString() ? profile.streak + 1 : 1;
-            profile.lastSessionDate = Timestamp.now();
+
+            if (lastDate?.toDateString() === yesterday.toDateString()) {
+                profile.streak = (profile.streak || 0) + 1;
+            } else {
+                profile.streak = 1; // 스트릭 깨지고 다시 시작
+            }
+            // lastActiveDate는 finalizeDailyGrowth에서 이미 업데이트 됨
             await saveProfile();
         }
     };
-    const checkBadges = async (logs) => {
-        const earned = [];
-        const frictionCounts = logs.flatMap(log => log.frictionTags).reduce((acc, tag) => ({ ...acc, [tag]: (acc[tag] || 0) + 1 }), {});
-        const badgeConditions = {
-            'friction-slayer': { name: '방해 요인 해결사', condition: () => Object.keys(frictionCounts).length > 0 && logs.length >= 5 },
-            'deep-diver': { name: '몰입의 대가', condition: () => logs.some(log => log.sessionDuration >= 50) }
-        };
-        for (const [id, badge] of Object.entries(badgeConditions)) {
-            if (!profile.badges?.includes(id) && badge.condition()) {
-                earned.push(badge);
-                if (!profile.badges) profile.badges = [];
-                profile.badges.push(id);
-            }
-        }
-        if (earned.length > 0) await saveProfile();
-        return earned;
-    };
+    
     const saveProfile = async () => {
         const user = Auth.getCurrentUser();
         if (!user) return;
-        await FirebaseAPI.updateUserProfile(user.uid, profile);
+        await FirebaseAPI.updateUserProfile(user.uid, {
+            level: profile.level,
+            totalFocusMinutes: profile.totalFocusMinutes,
+            streak: profile.streak,
+            lastActiveDate: profile.lastActiveDate,
+            badges: profile.badges,
+            totalTrees: profile.totalTrees,
+            forest: profile.forest,
+        });
         UI.updateGamificationStats(profile.level, profile.streak);
     };
+
     const saveDailyProgress = async () => {
         const user = Auth.getCurrentUser();
         if (!user) return;
         const todayStr = getTodayString();
-        if (!profile.dailyGoals) profile.dailyGoals = {};
-        profile.dailyGoals[todayStr] = dailyProgress;
-        await FirebaseAPI.updateUserProfile(user.uid, { dailyGoals: profile.dailyGoals });
+        if (!profile.dailyProgressLog) profile.dailyProgressLog = {};
+        profile.dailyProgressLog[todayStr] = dailyProgress;
+        await FirebaseAPI.updateUserProfile(user.uid, { dailyProgressLog: profile.dailyProgressLog });
     };
 
-    return { loadProfile, setDailyGoal, updateFocusSession, updateStreak, checkBadges };
+    return { 
+        loadProfile, 
+        setSeedGoal, 
+        updateFocusSession, 
+        updateStreak, 
+        finalizeDailyGrowth,
+        isForestDormant: () => profile.isDormant
+    };
 })();
 
 
