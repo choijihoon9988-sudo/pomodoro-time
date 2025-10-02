@@ -26,7 +26,8 @@ import {
     serverTimestamp,
     writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { Chart, registerables } from 'https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.esm.js';
+// ✅ 수정됨: 404 오류 해결을 위해 안정적인 CDN 주소로 변경
+import { Chart, registerables } from 'https://cdn.jsdelivr.net/npm/chart.js';
 
 // Chart.js의 모든 구성 요소를 등록합니다.
 Chart.register(...registerables);
@@ -35,7 +36,6 @@ Chart.register(...registerables);
 // ===================================================================================
 // Firebase 프로젝트 구성 정보
 // ===================================================================================
-// ✅ 수정됨: 로그인 문제를 해결하기 위해 이전 Firebase 프로젝트 구성 정보로 복원했습니다.
 const firebaseConfig = {
   apiKey: "AIzaSyCRHNKmNBtTFbCeQhhGJsoxYwmqKu1f4uo",
   authDomain: "pomodoro-os.firebaseapp.com",
@@ -934,3 +934,4 @@ const App = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);
+}
