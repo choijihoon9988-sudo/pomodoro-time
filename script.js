@@ -809,7 +809,7 @@ const Gamification = (() => {
         profile.dailyGoals.defaultGoal = goal;
 
         UI.updateForestDisplay(dailyProgress.energy, dailyProgress.goal);
-        UI.updateGoalProgress(daily.energy, dailyProgress.goal);
+        UI.updateGoalProgress(dailyProgress.energy, dailyProgress.goal);
         UI.lockGoalSetting(true);
 
         await saveDailyProgress();
