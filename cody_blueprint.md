@@ -1,6 +1,6 @@
 # Cody Blueprint - Project Metis (Friction-Zero OS)
 
-## Version: 20251002.4
+## Version: 20251002.5 (Final Fix)
 
 ### Project Overview
 Friction-Zero OS는 사용자의 마찰을 데이터 기반으로 측정하고 분석하여 성장을 유도하는 AI 기반 성장 운영체제입니다.
@@ -25,6 +25,10 @@ Friction-Zero OS는 사용자의 마찰을 데이터 기반으로 측정하고 �
 ---
 
 ### Change History
+
+#### 20251002.5 (Final Fix)
+- **File**: `index.html`, `script.js`
+- **Change**: Chart.js 라이브러리 로드 방식을 `script.js`의 `import`에서 `index.html`의 `<script>` 태그로 변경하여 "sankey is not a registered controller" 오류를 해결. 라이브러리 간의 인식 및 호환성 문제를 근본적으로 차단함.
 
 #### 20251002.4
 - **File**: `script.js`
