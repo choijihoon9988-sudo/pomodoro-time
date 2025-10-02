@@ -69,72 +69,6 @@ h1, h2, h3, h4 {
     overflow: hidden;
 }
 
-/* --- AUTHENTICATION VIEW --- */
-.auth-form__container {
-    width: 100%;
-    max-width: 400px;
-    margin: 4rem auto 0;
-    padding: 2.5rem;
-    background-color: var(--surface-color);
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--box-shadow);
-}
-
-.auth-form h2 {
-    text-align: center;
-    margin-bottom: 2rem;
-    font-size: 1.5rem;
-    font-weight: 700;
-}
-
-.auth-form__field {
-    margin-bottom: 1.5rem;
-}
-
-.auth-form__field label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    font-size: 0.875rem;
-}
-
-.auth-form__field input {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-md);
-    font-size: 1rem;
-    transition: var(--transition-smooth);
-}
-
-.auth-form__field input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.2);
-}
-
-.auth-form__error {
-    color: var(--error-color);
-    font-size: 0.875rem;
-    margin: -1rem 0 1.5rem;
-    min-height: 1.25rem;
-}
-
-.auth-form__switch {
-    text-align: center;
-    margin-top: 1.5rem;
-    font-size: 0.9rem;
-}
-
-.auth-form__switch button {
-    background: none;
-    border: none;
-    color: var(--primary-color);
-    cursor: pointer;
-    font-weight: 600;
-    padding: 0;
-}
-
 /* --- MAIN APP VIEW --- */
 .app-header {
     display: flex;
@@ -158,13 +92,6 @@ h1, h2, h3, h4 {
 }
 .gamification-stats .separator {
     color: var(--border-color);
-}
-
-.app-header__user-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    font-size: 0.875rem;
 }
 
 /* --- FOCUS DASHBOARD --- */

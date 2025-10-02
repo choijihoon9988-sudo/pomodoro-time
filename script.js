@@ -4,13 +4,6 @@
 // ===================================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-    getAuth,
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
     getFirestore,
     collection,
     addDoc,
@@ -26,8 +19,8 @@ import {
     serverTimestamp,
     writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-// ✅ 수정됨: 404 오류 해결을 위해 안정적인 CDN 주소로 변경
-import { Chart, registerables } from 'https://cdn.jsdelivr.net/npm/chart.js';
+// ✅ 수정됨: Chart.js ES 모듈을 명시적으로 임포트하여 오류 해결
+import { Chart, registerables } from 'https://cdn.jsdelivr.net/npm/chart.js/dist/chart.mjs';
 
 // Chart.js의 모든 구성 요소를 등록합니다.
 Chart.register(...registerables);
@@ -51,7 +44,7 @@ const firebaseConfig = {
  * @description Firebase SDK와의 모든 상호작용을 추상화.
  */
 const FirebaseAPI = (() => {
-    let app, auth, db;
+    let app, db;
 
     const init = () => {
         if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("YOUR_API_KEY")) {
@@ -60,15 +53,10 @@ const FirebaseAPI = (() => {
             return false;
         }
         app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
         db = getFirestore(app);
         return true;
     };
 
-    const listenAuthStateChange = (callback) => onAuthStateChanged(auth, callback);
-    const signUp = (email, password) => createUserWithEmailAndPassword(auth, email, password);
-    const signIn = (email, password) => signInWithEmailAndPassword(auth, email, password);
-    const logOut = () => signOut(auth);
     const getUserProfile = (userId) => getDoc(doc(db, 'users', userId));
     const createUserProfile = (userId, email) => {
         const userProfileRef = doc(db, 'users', userId);
@@ -103,7 +91,7 @@ const FirebaseAPI = (() => {
     const deleteSystem = (userId, systemId) => deleteDoc(doc(db, 'users', userId, 'systems', systemId));
 
     return {
-        init, listenAuthStateChange, signUp, signIn, logOut, getUserProfile, createUserProfile, updateUserProfile,
+        init, getUserProfile, createUserProfile, updateUserProfile,
         getUserSettings, updateUserSettings, saveLog, getLogsByDateRange, addSystem, getSystems, deleteSystem
     };
 })();
@@ -158,8 +146,7 @@ const UI = (() => {
 
     const cacheDOM = () => {
         const ids = [
-            'auth-view', 'login-form', 'signup-form', 'app-view', 'logout-btn', 'user-email',
-            'streak-count', 'user-level', 'start-btn', 'pause-btn', 'reset-btn', 'end-day-btn',
+            'app-view', 'streak-count', 'user-level', 'start-btn', 'pause-btn', 'reset-btn', 'end-day-btn',
             'my-systems-btn', 'stats-btn', 'log-modal', 'log-form', 'log-activity', 'friction-tags', 'emotion-tags',
             'distraction-input', 'distraction-list', 'report-modal', 'report-content', 'show-system-btn',
             'system-suggestion-modal', 'system-suggestion-text', 'adopt-system-btn', 'my-systems-modal',
@@ -173,10 +160,6 @@ const UI = (() => {
         ];
         ids.forEach(id => dom[id.replace(/-(\w)/g, (_, c) => c.toUpperCase())] = document.getElementById(id));
 
-        dom.loginError = dom.loginForm?.querySelector('.auth-form__error');
-        dom.signupError = dom.signupForm?.querySelector('.auth-form__error');
-        dom.showSignupBtn = document.getElementById('show-signup');
-        dom.showLoginBtn = document.getElementById('show-login');
         dom.presetBtns = document.querySelectorAll('.button--preset');
         dom.timerProgressTime = document.querySelector('.timer-progress__time');
         dom.timerProgressGoal = document.querySelector('.timer-progress__goal');
@@ -193,11 +176,6 @@ const UI = (() => {
     };
 
     const bindEventListeners = () => {
-        dom.loginForm?.addEventListener('submit', App.handleLogin);
-        dom.signupForm?.addEventListener('submit', App.handleSignup);
-        dom.logoutBtn?.addEventListener('click', Auth.handleSignOut);
-        dom.showSignupBtn?.addEventListener('click', () => toggleAuthForm('signup'));
-        dom.showLoginBtn?.addEventListener('click', () => toggleAuthForm('login'));
         dom.startBtn?.addEventListener('click', Timer.start);
         dom.pauseBtn?.addEventListener('click', Timer.pause);
         dom.resetBtn?.addEventListener('click', () => toggleModal('reset-confirm-modal', true));
@@ -228,25 +206,6 @@ const UI = (() => {
         dom.enhancedRestToggle?.addEventListener('change', App.handleEnhancedRestToggle);
         dom.transitionActionBtn?.addEventListener('click', Timer.startNextSession);
     };
-
-    const toggleAuthForm = (formToShow) => {
-        dom.loginForm?.classList.toggle('hidden', formToShow === 'signup');
-        dom.signupForm?.classList.toggle('hidden', formToShow === 'login');
-        dom.loginError?.classList.add('hidden');
-        dom.signupError?.classList.add('hidden');
-    };
-
-    const showView = (viewName) => {
-        dom.authView?.classList.toggle('hidden', viewName === 'app');
-        dom.appView?.classList.toggle('hidden', viewName === 'auth');
-    };
-
-    const displayAuthError = (formType, message) => {
-        const errorEl = formType === 'login' ? dom.loginError : dom.signupError;
-        if (errorEl) { errorEl.textContent = message; errorEl.classList.remove('hidden'); }
-    };
-
-    const updateUserEmail = (email) => { if (dom.userEmail) dom.userEmail.textContent = email || ''; };
 
     const updateGamificationStats = (level, streak) => {
         if (dom.userLevel) dom.userLevel.textContent = level;
@@ -383,7 +342,7 @@ const UI = (() => {
 
     return {
         init: () => { cacheDOM(); bindEventListeners(); renderTagButtons(); renderSelectOptions(); },
-        showView, displayAuthError, updateUserEmail, updateGamificationStats, updateTimerDisplay,
+        updateGamificationStats, updateTimerDisplay,
         updateTimerControls, toggleModal, resetLogForm, renderDistractionList,
         renderReport, showSystemSuggestion, renderMySystems, updateForestDisplay, updateGoalProgress,
         showSessionTransitionModal, showPositivePriming, updateActivePreset, showRestSuggestion,
@@ -407,38 +366,31 @@ const UI = (() => {
 
 /**
  * @module Auth
- * @description 사용자 인증 상태 관리.
+ * @description 단일 사용자 모드를 위한 가상 인증 모듈.
  */
 const Auth = (() => {
-    let currentUser = null;
-    const init = () => {
-        FirebaseAPI.listenAuthStateChange(async user => {
-            currentUser = user;
-            if (user) {
-                const profileSnap = await FirebaseAPI.getUserProfile(user.uid);
-                if (!profileSnap.exists()) await FirebaseAPI.createUserProfile(user.uid, user.email);
+    const LOCAL_USER_ID = 'default-user';
 
-                const settingsSnap = await FirebaseAPI.getUserSettings(user.uid);
-                if (settingsSnap.exists()) {
-                    const settings = settingsSnap.data();
-                    Timer.applySettings(settings);
-                    UI.setSettings(settings);
-                }
+    const init = async () => {
+        // 앱 시작 시, 단일 사용자의 프로필이 없으면 생성합니다.
+        const profileSnap = await FirebaseAPI.getUserProfile(LOCAL_USER_ID);
+        if (!profileSnap.exists()) {
+            await FirebaseAPI.createUserProfile(LOCAL_USER_ID, 'default-user@local.host');
+        }
 
-                Gamification.loadProfile();
-                UI.showView('app');
-                UI.updateUserEmail(user.email);
-            } else {
-                UI.showView('auth');
-                UI.updateUserEmail(null);
-                Timer.reset();
-            }
-        });
+        // 설정 및 게임화 데이터를 로드합니다.
+        const settingsSnap = await FirebaseAPI.getUserSettings(LOCAL_USER_ID);
+        if (settingsSnap.exists()) {
+            const settings = settingsSnap.data();
+            Timer.applySettings(settings);
+            UI.setSettings(settings);
+        }
+        await Gamification.loadProfile();
     };
-    const handleSignUp = async (email, password) => { try { await FirebaseAPI.signUp(email, password); } catch (error) { UI.displayAuthError('signup', App.mapAuthCodeToMessage(error.code)); } };
-    const handleSignIn = async (email, password) => { try { await FirebaseAPI.signIn(email, password); } catch (error) { UI.displayAuthError('login', App.mapAuthCodeToMessage(error.code)); } };
-    const handleSignOut = async () => { try { await FirebaseAPI.logOut(); } catch (error) { console.error("로그아웃 중 오류가 발생했습니다:", error); } };
-    return { init, handleSignUp, handleSignIn, handleSignOut, getCurrentUser: () => currentUser };
+
+    const getCurrentUser = () => ({ uid: LOCAL_USER_ID });
+
+    return { init, getCurrentUser };
 })();
 
 
@@ -877,22 +829,12 @@ const App = (() => {
     const init = () => {
         if (!FirebaseAPI.init()) return;
         UI.init();
-        Auth.init();
+        Auth.init(); // 단일 사용자 모드 초기화
         Notifications.requestPermission();
         Favicon.set('default');
         Timer.setConfig(25, 5, '보통');
     };
-    const mapAuthCodeToMessage = (code) => {
-        const messages = {
-            'auth/invalid-email': '올바른 이메일 형식이 아니에요.',
-            'auth/user-not-found': '가입하지 않은 이메일이거나, 이메일을 잘못 입력하셨어요.',
-            'auth/wrong-password': '비밀번호가 일치하지 않아요.',
-            'auth/email-already-in-use': '이미 사용 중인 이메일이에요.',
-            'auth/weak-password': '비밀번호는 6자리 이상이어야 해요.',
-            'auth/invalid-credential': '이메일 또는 비밀번호가 잘못되었습니다.'
-        };
-        return messages[code] || '오류가 발생했습니다: ' + code;
-    };
+    
     const handlePresetSelect = (e) => {
         const btn = e.target.closest('.button--preset');
         if (!btn) return;
@@ -921,16 +863,8 @@ const App = (() => {
         UI.toggleEnhancedRestUI(enabled);
         await FirebaseAPI.updateUserSettings(user.uid, { enhancedRest: enabled });
     };
-    const handleLogin = (e) => {
-        e.preventDefault();
-        Auth.handleSignIn(e.target.querySelector('#login-email').value, e.target.querySelector('#login-password').value);
-    };
-    const handleSignup = (e) => {
-        e.preventDefault();
-        Auth.handleSignUp(e.target.querySelector('#signup-email').value, e.target.querySelector('#signup-password').value);
-    };
 
-    return { init, mapAuthCodeToMessage, handleLogin, handleSignup, handlePresetSelect, handleShowSystem, handleSoundChange, handleEnhancedRestToggle };
+    return { init, handlePresetSelect, handleShowSystem, handleSoundChange, handleEnhancedRestToggle };
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);
