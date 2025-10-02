@@ -26,7 +26,6 @@ import {
     serverTimestamp,
     writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-// ✅ 수정됨: cdn.jsdelivr.net으로 올바른 주소로 변경
 import { Chart, registerables } from 'https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.esm.js';
 
 // Chart.js의 모든 구성 요소를 등록합니다.
@@ -36,13 +35,14 @@ Chart.register(...registerables);
 // ===================================================================================
 // Firebase 프로젝트 구성 정보
 // ===================================================================================
+// ✅ 수정됨: 로그인 문제를 해결하기 위해 이전 Firebase 프로젝트 구성 정보로 복원했습니다.
 const firebaseConfig = {
-  apiKey: "AIzaSyCr_ntgN9h3nTO4kE2L915QKjgOXkL38vw",
-  authDomain: "friction-zero-os.firebaseapp.com",
-  projectId: "friction-zero-os",
-  storageBucket: "friction-zero-os.firebasestorage.app",
-  messagingSenderId: "819091253027",
-  appId: "1:819091253027:web:40561c250cec97e51cce96"
+  apiKey: "AIzaSyCRHNKmNBtTFbCeQhhGJsoxYwmqKu1f4uo",
+  authDomain: "pomodoro-os.firebaseapp.com",
+  projectId: "pomodoro-os",
+  storageBucket: "pomodoro-os.firebasestorage.app",
+  messagingSenderId: "338185932667",
+  appId: "1:338185932667:web:c5c9c46274db636d6777de"
 };
 
 
@@ -54,7 +54,7 @@ const FirebaseAPI = (() => {
     let app, auth, db;
 
     const init = () => {
-        if (!firebaseConfig.apiKey || firebaseConfig.apiKey.length < 20) {
+        if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("YOUR_API_KEY")) {
             console.error("Firebase 구성 정보가 유효하지 않습니다. script.js 파일의 firebaseConfig 객체를 확인해주세요.");
             alert("서비스 연결 설정이 올바르지 않습니다. 관리자에게 문의해주세요.");
             return false;
