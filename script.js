@@ -412,8 +412,7 @@ const Timer = (() => {
     const completeSession = () => {
         clearInterval(state.timerId);
         state.status = 'idle';
-        // 404 오류 방지 주석 해제: 실제 파일 경로와 일치하는 경우 주석을 풀어야 합니다.
-        // alarmAudio?.play();
+        alarmAudio?.play();
         Favicon.set('default');
 
         if (state.mode === '집중 시간') {
@@ -435,7 +434,7 @@ const Timer = (() => {
             Notifications.show('고생하셨어요!', { body: `${config.restDuration}분간 휴식하며 다음 집중을 준비하세요.` });
             if (settings.enhancedRest) {
                  UI.showRestSuggestion(true, suggestion);
-                 // if (settings.restSound !== 'none') { restAudio?.play(); }
+                 if (settings.restSound !== 'none') { restAudio?.play(); }
             }
         } else { // 휴식 끝, 집중 시간으로 전환
             startNextFocusSession();
@@ -449,7 +448,7 @@ const Timer = (() => {
         Notifications.show('다시 집중할 시간이에요', { body: `이제 ${config.focusDuration}분간 다시 한번 몰입해 보세요.` });
         if (settings.enhancedRest) {
             UI.showRestSuggestion(false);
-            // restAudio?.pause();
+            restAudio?.pause();
         }
     };
     
@@ -490,19 +489,18 @@ const Timer = (() => {
         UI.updateTimerDisplay(formatTime(state.remainingSeconds), state.mode, state.remainingSeconds, state.totalSeconds);
         UI.updateTimerControls(state.status);
         UI.showRestSuggestion(false);
-        // restAudio?.pause();
+        restAudio?.pause();
     };
 
     const applySettings = (newSettings) => {
         settings = { ...settings, ...newSettings };
-        // 404 오류 방지를 위해 임시 주석 처리
-        // alarmAudio = new Audio(`sounds/${settings.alarmSound}`);
-        // if (settings.restSound !== 'none') {
-        //     restAudio = new Audio(`sounds/${settings.restSound}`);
-        //     restAudio.loop = true;
-        // } else {
-        //     restAudio = null;
-        // }
+        alarmAudio = new Audio(`sounds/${settings.alarmSound}`);
+        if (settings.restSound !== 'none') {
+            restAudio = new Audio(`sounds/${settings.restSound}`);
+            restAudio.loop = true;
+        } else {
+            restAudio = null;
+        }
     };
 
     return {
@@ -931,16 +929,14 @@ const App = (() => {
         const user = Auth.getCurrentUser();
         if (!user) return;
         const settings = { [type]: value };
-        // 404 오류 방지 주석 처리 해제
-        // Timer.applySettings(settings); 
+        Timer.applySettings(settings); 
         await FirebaseAPI.updateUserSettings(user.uid, settings);
     };
     const handleEnhancedRestToggle = async (e) => {
         const user = Auth.getCurrentUser();
         if (!user) return;
         const enabled = e.target.checked;
-        // 404 오류 방지 주석 처리 해제
-        // Timer.applySettings({ enhancedRest: enabled }); 
+        Timer.applySettings({ enhancedRest: enabled }); 
         UI.toggleEnhancedRestUI(enabled);
         await FirebaseAPI.updateUserSettings(user.uid, { enhancedRest: enabled });
     };

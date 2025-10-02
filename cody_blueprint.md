@@ -1,6 +1,6 @@
 # Cody Blueprint - Project Metis (Friction-Zero OS)
 
-## Version: 20251003.2 (Chart.js Hotfix)
+## Version: 20251003.3 (Audio Fix)
 
 ### Project Overview
 Friction-Zero OS는 사용자의 마찰을 데이터 기반으로 측정하고 분석하여 성장을 유도하는 AI 기반 성장 운영체제입니다.
@@ -11,6 +11,7 @@ Friction-Zero OS는 사용자의 마찰을 데이터 기반으로 측정하고 �
 - `script.js`: 애플리케이션의 핵심 로직을 담고 있는 자바스크립트 파일
 - `firebase.json`: Firebase 호스팅 설정 파일
 - `icons/`: 애플리케이션 상태에 따른 파비콘 이미지 폴더
+- `sounds/`: 알람 및 배경음 오디오 파일 폴더
 
 ### Key Modules in `script.js`
 - **FirebaseAPI**: Firebase와의 모든 통신을 담당.
@@ -25,6 +26,10 @@ Friction-Zero OS는 사용자의 마찰을 데이터 기반으로 측정하고 �
 ---
 
 ### Change History
+
+#### 20251003.3 (Audio Fix)
+- **File**: `script.js`
+- **Change**: 타이머 세션 종료 및 휴식 시간 알람 소리가 나지 않는 문제를 해결했습니다. `Timer` 모듈 내에서 주석 처리되어 있던 오디오 객체 생성(`new Audio()`) 및 재생(`play()`, `pause()`) 관련 코드를 모두 활성화했습니다. 이를 통해 사용자가 설정한 알람음과 휴식 배경음이 정상적으로 재생됩니다. 다른 브라우저 탭으로 이동했을 때 소리가 들리지 않는 현상은 브라우저 정책에 따른 것이며, 이를 보완하기 위한 기존의 데스크톱 알림 기능은 정상적으로 유지됩니다.
 
 #### 20251003.2 (Chart.js Hotfix)
 - **File**: `script.js`, `index.html`
