@@ -35,9 +35,7 @@ Chart.register(...registerables);
 
 
 // ===================================================================================
-// !!! 중요 !!!
-// 아래 객체에 본인의 Firebase 프로젝트의 실제 구성 정보를 붙여넣으세요.
-// 이 정보가 없으면 로그인을 포함한 모든 Firebase 기능이 작동하지 않습니다.
+// Firebase 프로젝트 구성 정보
 // ===================================================================================
 const firebaseConfig = {
   apiKey: "AIzaSyCRHNKmNBtTFbCeQhhGJsoxYwmqKu1f4uo",
@@ -57,9 +55,9 @@ const FirebaseAPI = (() => {
     let app, auth, db;
 
     const init = () => {
-        if (firebaseConfig.apiKey === "YOUR_API_KEY") {
-            console.error("Firebase 구성 정보가 비어있습니다. script.js 파일의 firebaseConfig 객체를 채워주세요.");
-            alert("서비스 연결이 원활하지 않습니다. 잠시 후 다시 시도해주세요.");
+        if (!firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("AIzaS")) {
+            console.error("Firebase 구성 정보가 유효하지 않습니다. script.js 파일의 firebaseConfig 객체를 확인해주세요.");
+            alert("서비스 연결 설정이 올바르지 않습니다. 관리자에게 문의해주세요.");
             return false;
         }
         app = initializeApp(firebaseConfig);
@@ -936,4 +934,3 @@ const App = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);
-}
