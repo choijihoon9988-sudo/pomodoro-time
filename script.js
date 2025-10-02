@@ -19,13 +19,9 @@ import {
     serverTimestamp,
     writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-// ✅ 수정됨: Chart.js 및 생키 다이어그램 컨트롤러를 ES 모듈로 임포트
-import { Chart, registerables } from 'https://cdn.jsdelivr.net/npm/chart.js/dist/chart.mjs';
-// ✅ 수정됨: 404 오류 해결을 위해 CDN URL을 ES Module에 최적화된 경로로 변경
-import { SankeyController, Flow } from 'https://cdn.jsdelivr.net/npm/chartjs-chart-sankey@0.12.1/+esm';
 
-// Chart.js의 모든 기본 구성 요소와 생키 컨트롤러를 등록합니다.
-Chart.register(...registerables, SankeyController, Flow);
+// ✅ 수정됨: Chart.js 관련 import 및 register 코드를 모두 삭제.
+// index.html에서 직접 라이브러리를 로드하므로 더 이상 필요 없습니다.
 
 
 // ===================================================================================
